@@ -1,0 +1,1 @@
+﻿// roles.js — Role enum: PUBLIC, REGISTERED, PAID, TEACHER, ADMIN, SUPER_ADMIN

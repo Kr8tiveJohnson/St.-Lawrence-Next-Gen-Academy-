@@ -1,0 +1,1 @@
+﻿// payment.model — transactions: id, userId(FK), type(membership/ad-free/classroom/content), amount, provider(paystack/flutterwave), status, paidAt; membership_status: userId(FK), tier, adFree(bool), expiresAt
