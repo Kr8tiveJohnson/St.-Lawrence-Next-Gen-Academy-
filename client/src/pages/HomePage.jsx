@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import studentImg from "../assets/student.png";
 import logoImg from "../assets/St. Lawrence Next Gen Academy logo.png";
 import TimeWeatherWidget from "../components/common/TimeWeatherWidget.jsx";
+import client from "../api/client";
 
 function AnimatedCounter({ value, suffix = "+" }) {
   const [count, setCount] = useState(0);
@@ -289,12 +290,22 @@ const VALUE_POINTS = [
 export default function HomePage() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [announcements, setAnnouncements] = useState([]);
 
   useReveal();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 32);
     window.addEventListener("scroll", onScroll, { passive: true });
+    
+    // Fetch live announcements
+    client.get("/news")
+      .then(({ data }) => {
+        const filtered = (data.news || []).filter(n => n.tag !== "hall-of-fame");
+        setAnnouncements(filtered.slice(0, 4));
+      })
+      .catch(() => {});
+
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
@@ -532,18 +543,25 @@ export default function HomePage() {
             </div>
 
             <div className="announcement-list">
-              {ANNOUNCEMENTS.map((item, index) => (
+              {(announcements.length > 0 ? announcements : ANNOUNCEMENTS).map((item, index) => (
                 <article
                   key={item.title}
                   className="announcement-card reveal"
-                  style={{ transitionDelay: `${index * 90}ms` }}
+                  style={{ transitionDelay: `${index * 90}ms`, display: "flex", gap: "16px", alignItems: "flex-start" }}
                 >
-                  <div className="announcement-meta">
-                    <span className="announcement-tag">{item.tag}</span>
-                    <span>{item.date}</span>
+                  {item.imageUrl && (
+                    <div style={{ width: "90px", height: "70px", borderRadius: "8px", overflow: "hidden", background: "#f1f5f9", flexShrink: 0 }}>
+                      <img src={item.imageUrl} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
+                  )}
+                  <div style={{ flex: 1 }}>
+                    <div className="announcement-meta">
+                      <span className="announcement-tag" style={{ textTransform: "uppercase" }}>{item.tag}</span>
+                      <span>{item.date ? item.date : new Date(item.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <h3>{item.title}</h3>
+                    <p>{item.text || item.summary}</p>
                   </div>
-                  <h3>{item.title}</h3>
-                  <p>{item.text}</p>
                 </article>
               ))}
             </div>

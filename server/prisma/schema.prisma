@@ -39,6 +39,7 @@ model User {
   messagesReceived Message[] @relation("Receiver")
   friendRequestsSent   Friendship[] @relation("Requester")
   friendRequestsReceived Friendship[] @relation("Receiver")
+  payments             Payment[]
 }
 
 model Profile {
@@ -83,12 +84,14 @@ model Enrollment {
 }
 
 model Course {
-  id       String   @id @default(uuid())
-  title    String
-  category String
-  subject  String
-  isPaid   Boolean  @default(true)
-  lessons  Lesson[]
+  id          String   @id @default(uuid())
+  title       String
+  category    String
+  subject     String
+  description String?
+  imageUrl    String?
+  isPaid      Boolean  @default(true)
+  lessons     Lesson[]
 }
 
 model Lesson {
@@ -129,6 +132,7 @@ model News {
   date      DateTime @default(now())
   summary   String
   details   String
+  imageUrl  String?
 }
 
 model Message {
@@ -163,3 +167,15 @@ model AdSetting {
   isActive Boolean @default(true)
   price    Float?
 }
+
+model Payment {
+  id        String   @id @default(uuid())
+  userId    String
+  amount    Float
+  type      String   // e.g. 'premium_access'
+  status    String   @default("SUCCESS") // PENDING, SUCCESS, FAILED
+  reference String   @unique
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+

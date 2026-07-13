@@ -1,4 +1,4 @@
-﻿const prisma = require('../config/database');
+const prisma = require('../config/database');
 
 /**
  * Get all news articles (public)
@@ -43,7 +43,7 @@ async function getNewsById(req, res) {
  */
 async function createNews(req, res) {
   try {
-    const { title, tag, summary, details } = req.body;
+    const { title, tag, summary, details, imageUrl } = req.body;
 
     if (!title || !summary || !details) {
       return res.status(400).json({ error: 'Title, summary, and details are required' });
@@ -54,7 +54,8 @@ async function createNews(req, res) {
         title,
         tag: tag || 'general',
         summary,
-        details
+        details,
+        imageUrl: imageUrl || null
       }
     });
 
@@ -71,7 +72,7 @@ async function createNews(req, res) {
 async function updateNews(req, res) {
   try {
     const { id } = req.params;
-    const { title, tag, summary, details } = req.body;
+    const { title, tag, summary, details, imageUrl } = req.body;
 
     const news = await prisma.news.update({
       where: { id },
@@ -79,7 +80,8 @@ async function updateNews(req, res) {
         title: title || undefined,
         tag: tag || undefined,
         summary: summary || undefined,
-        details: details || undefined
+        details: details || undefined,
+        imageUrl: imageUrl !== undefined ? imageUrl : undefined
       }
     });
 
@@ -128,7 +130,7 @@ async function getHallOfFame(req, res) {
  */
 async function addHallOfFameEntry(req, res) {
   try {
-    const { title, summary, details } = req.body;
+    const { title, summary, details, imageUrl } = req.body;
 
     if (!title || !summary) {
       return res.status(400).json({ error: 'Title and summary are required' });
@@ -139,7 +141,8 @@ async function addHallOfFameEntry(req, res) {
         title,
         tag: 'hall-of-fame',
         summary,
-        details: details || summary
+        details: details || summary,
+        imageUrl: imageUrl || null
       }
     });
 

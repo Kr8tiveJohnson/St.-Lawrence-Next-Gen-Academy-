@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/auth.middleware');
 const { requireMinRole } = require('../middleware/rbac.middleware');
@@ -26,4 +26,8 @@ router.get('/logs', adminController.getAuditLogs);
 router.get('/ads/settings', adminController.getAdSettings);
 router.post('/ads/settings', adminController.manageAdSettings);
 
+// Payments (Earnings)
+router.get('/payments', adminController.getPayments);
+
 module.exports = router;
+

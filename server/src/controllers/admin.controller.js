@@ -16,11 +16,18 @@ async function getDashboardStats(req, res) {
 
     const premiumUsers = await prisma.user.count({ where: { tier: 'PAID' } });
 
+    const revenueSum = await prisma.payment.aggregate({
+      where: { status: 'SUCCESS' },
+      _sum: {
+        amount: true
+      }
+    });
+
     res.status(200).json({
       totalUsers,
       activeTeachers,
       premiumUsers,
-      totalRevenue: null,
+      totalRevenue: revenueSum._sum.amount || 0,
       coursesPublished: courses,
       newsArticles,
       hallOfFameEntries,
@@ -180,6 +187,26 @@ async function getAdSettings(req, res) {
   }
 }
 
+/**
+ * Get all payment records (admin only)
+ */
+async function getPayments(req, res) {
+  try {
+    const payments = await prisma.payment.findMany({
+      include: {
+        user: {
+          include: { profile: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.status(200).json({ payments });
+  } catch (error) {
+    console.error('Get payments error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   getDashboardStats,
   getAllUsers,
@@ -188,5 +215,6 @@ module.exports = {
   getClassroomActivity,
   getAuditLogs,
   manageAdSettings,
-  getAdSettings
+  getAdSettings,
+  getPayments
 };

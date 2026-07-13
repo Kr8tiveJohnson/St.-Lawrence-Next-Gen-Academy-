@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import logoImg from "../assets/St. Lawrence Next Gen Academy logo.png";
+import client from "../api/client";
 
-const ALL_NEWS = [
+const FALLBACK_NEWS = [
   {
     id: 1,
     tag: "Exam Update",
@@ -18,31 +19,30 @@ const ALL_NEWS = [
     title: "New Interactive Digital Skills Modules",
     summary: "We've added three new interactive courses covering Basic Web Design, Data Analysis Basics, and Graphic Design Fundamentals.",
     details: "As part of our commitment to equipping students with 21st-century skills, St. Lawrence Next Gen Academy is thrilled to announce the addition of three new interactive modules to our Digital Skills curriculum. These include: \n\n1. Basic Web Design (HTML/CSS)\n2. Data Analysis Basics using Excel\n3. Graphic Design Fundamentals with Canva\n\nThese courses are now available for all registered students at no extra cost. Head over to the Classrooms section to enroll today!"
-  },
-  {
-    id: 3,
-    tag: "Notice",
-    date: "Aug 05, 2026",
-    title: "JAMB Mock Exam Registration Opens",
-    summary: "Registration for the 2026 JAMB Mock Examinations will open on August 10. Check requirements and deadlines.",
-    details: "The Joint Admissions and Matriculation Board (JAMB) has announced that registration for the 2026 Mock UTME will commence on August 10, 2026, and end on August 31, 2026. The mock exam is optional but highly recommended as it helps candidates get hands-on experience with the CBT environment. Interested candidates should indicate their interest during their UTME registration."
-  },
-  {
-    id: 4,
-    tag: "Community",
-    date: "Jul 28, 2026",
-    title: "Top Performers for July Announced",
-    summary: "Congratulations to our top 10 students who achieved the highest scores in last month's weekly mock assessments.",
-    details: "We are excited to announce our top performers for the month of July! These students consistently scored above 90% in our weekly mock assessments across various subjects.\n\nSpecial congratulations to:\n- Emeka U. (Science)\n- Amina S. (Arts)\n- Tolu O. (Commercial)\n\nKeep up the excellent work! Certificates of excellence have been added to your profiles."
-  },
+  }
 ];
 
 export default function NewsPage() {
+  const [news, setNews] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedNews, setSelectedNews] = useState(null);
 
   // Scroll to top on mount
   useEffect(() => {
     window.scrollTo(0, 0);
+    
+    // Fetch live news
+    client.get("/news")
+      .then(({ data }) => {
+        // Filter out hall-of-fame entries if they are in this list
+        const filtered = (data.news || []).filter(n => n.tag !== "hall-of-fame");
+        setNews(filtered.length > 0 ? filtered : FALLBACK_NEWS);
+      })
+      .catch((err) => {
+        console.error("Failed to load news, showing fallbacks", err);
+        setNews(FALLBACK_NEWS);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   return (
@@ -106,69 +106,85 @@ export default function NewsPage() {
           </p>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-          {ALL_NEWS.map((item) => (
-            <article
-              key={item.id}
-              className="announcement-card"
-              style={{
-                background: "white",
-                padding: "24px",
-                borderRadius: "16px",
-                border: "1px solid var(--border)",
-                boxShadow: "var(--shadow-sm)",
-                transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                wordBreak: "break-word",
-                overflowWrap: "break-word"
-              }}
-            >
-              <div className="announcement-meta" style={{ marginBottom: "12px" }}>
-                <span className="announcement-tag">{item.tag}</span>
-                <span style={{ fontSize: "0.85rem", color: "var(--text-light)" }}>{item.date}</span>
-              </div>
-              <h2 style={{ fontSize: "1.4rem", color: "var(--navy)", marginBottom: "12px" }}>
-                {item.title}
-              </h2>
-              
-              {selectedNews === item.id ? (
-                <div style={{ marginTop: "16px" }}>
-                  <p style={{ color: "var(--text)", lineHeight: "1.6", whiteSpace: "pre-line" }}>
-                    {item.details}
-                  </p>
-                  <button
-                    onClick={() => setSelectedNews(null)}
-                    className="btn btn-secondary"
-                    style={{ marginTop: "24px" }}
-                  >
-                    Hide Details
-                  </button>
+        {loading ? (
+          <p style={{ color: "var(--text-light)", textAlign: "center", padding: "40px" }}>Loading announcements...</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+            {news.map((item) => (
+              <article
+                key={item.id}
+                className="announcement-card"
+                style={{
+                  background: "white",
+                  padding: "24px",
+                  borderRadius: "16px",
+                  border: "1px solid var(--border)",
+                  boxShadow: "var(--shadow-sm)",
+                  transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                  wordBreak: "break-word",
+                  overflowWrap: "break-word",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "16px"
+                }}
+              >
+                {item.imageUrl && (
+                  <div style={{ width: "100%", height: "200px", borderRadius: "12px", overflow: "hidden", background: "#f1f5f9" }}>
+                    <img src={item.imageUrl} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </div>
+                )}
+                <div>
+                  <div className="announcement-meta" style={{ marginBottom: "12px" }}>
+                    <span className="announcement-tag" style={{ textTransform: "uppercase" }}>{item.tag}</span>
+                    <span style={{ fontSize: "0.85rem", color: "var(--text-light)" }}>
+                      {new Date(item.date || item.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <h2 style={{ fontSize: "1.4rem", color: "var(--navy)", marginBottom: "12px" }}>
+                    {item.title}
+                  </h2>
+                  
+                  {selectedNews === item.id ? (
+                    <div style={{ marginTop: "16px" }}>
+                      <p style={{ color: "var(--text)", lineHeight: "1.6", whiteSpace: "pre-line" }}>
+                        {item.details}
+                      </p>
+                      <button
+                        onClick={() => setSelectedNews(null)}
+                        className="btn btn-secondary"
+                        style={{ marginTop: "24px" }}
+                      >
+                        Hide Details
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <p style={{ color: "var(--text-light)", lineHeight: "1.5", marginBottom: "20px" }}>
+                        {item.summary}
+                      </p>
+                      <button
+                        onClick={() => setSelectedNews(item.id)}
+                        className="btn"
+                        style={{ 
+                          background: "transparent", 
+                          border: "1px solid var(--border)", 
+                          color: "var(--navy)", 
+                          padding: "8px 16px",
+                          borderRadius: "8px",
+                          fontSize: "0.9rem",
+                          fontWeight: 600,
+                          cursor: "pointer"
+                        }}
+                      >
+                        View in Details
+                      </button>
+                    </>
+                  )}
                 </div>
-              ) : (
-                <>
-                  <p style={{ color: "var(--text-light)", lineHeight: "1.5", marginBottom: "20px" }}>
-                    {item.summary}
-                  </p>
-                  <button
-                    onClick={() => setSelectedNews(item.id)}
-                    className="btn"
-                    style={{ 
-                      background: "transparent", 
-                      border: "1px solid var(--border)", 
-                      color: "var(--navy)", 
-                      padding: "8px 16px",
-                      borderRadius: "8px",
-                      fontSize: "0.9rem",
-                      fontWeight: 600,
-                      cursor: "pointer"
-                    }}
-                  >
-                    View in Details
-                  </button>
-                </>
-              )}
-            </article>
-          ))}
-        </div>
+              </article>
+            ))}
+          </div>
+        )}
       </main>
 
       {/* ── FOOTER ───────────────────────────────────── */}

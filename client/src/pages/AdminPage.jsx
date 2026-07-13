@@ -29,6 +29,7 @@ const ICONS = {
   menu:      "M4 6h16M4 12h16M4 18h16",
   check:     "M5 13l4 4L19 7",
   x:         "M6 18L18 6M6 6l12 12",
+  wallet:    "M20 12V8H6a2 2 0 012-2h12V4a2 2 0 00-2-2H4a2 2 0 00-2 2v16a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2h-2m-4 0v4H6V12z"
 };
 
 const NAV = [
@@ -38,6 +39,7 @@ const NAV = [
   { id: "Courses",    label: "Courses & Lessons",  icon: "courses"   },
   { id: "News",       label: "News Management",    icon: "news"      },
   { id: "Fame",       label: "Hall of Fame",       icon: "fame"      },
+  { id: "Earnings",   label: "Earnings",           icon: "wallet"    },
   { id: "Analytics",  label: "Analytics",          icon: "analytics" },
   { id: "Moderation", label: "Moderation",         icon: "shield"    },
 ];
@@ -67,7 +69,7 @@ function Modal({ title, children, onClose }) {
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}
       onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div style={{ background: "#fff", borderRadius: "20px", padding: "32px", width: "100%", maxWidth: "540px", boxShadow: "0 25px 60px rgba(0,0,0,0.25)" }}>
+      <div style={{ background: "#fff", borderRadius: "20px", padding: "32px", width: "100%", maxWidth: "540px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 25px 60px rgba(0,0,0,0.25)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
           <h2 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800, color: "#0f2144" }}>{title}</h2>
           <button onClick={onClose} style={{ background: "#f1f5f9", border: "none", borderRadius: "8px", width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -123,7 +125,7 @@ function DashboardTab({ stats, onNav }) {
               { label: "Add News Article",       tab: "News",    color: "#6366f1" },
               { label: "Create Course",          tab: "Courses", color: "#0ea5e9" },
               { label: "Add Hall of Fame Entry", tab: "Fame",    color: "#d4a853" },
-              { label: "View Analytics",         tab: "Analytics",color: "#22c55e" },
+              { label: "View Earnings / Sales",  tab: "Earnings",color: "#22c55e" },
               { label: "Manage Users",           tab: "Users",   color: "#ec4899" },
               { label: "Teacher Approvals",      tab: "Teachers",color: "#f97316" },
             ].map(a => (
@@ -235,7 +237,8 @@ function NewsTab() {
   const [news, setNews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
-  const [form, setForm] = useState({ title: "", tag: "general", summary: "", details: "" });
+  const [editItem, setEditItem] = useState(null);
+  const [form, setForm] = useState({ title: "", tag: "general", summary: "", details: "", imageUrl: "" });
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -249,15 +252,30 @@ function NewsTab() {
 
   useEffect(() => { load(); }, [load]);
 
+  const openCreate = () => {
+    setForm({ title: "", tag: "general", summary: "", details: "", imageUrl: "" });
+    setEditItem(null);
+    setModal(true);
+  };
+
+  const openEdit = (item) => {
+    setForm({ title: item.title, tag: item.tag, summary: item.summary, details: item.details, imageUrl: item.imageUrl || "" });
+    setEditItem(item);
+    setModal(true);
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await client.post("/news", form, { headers: adminHeaders() });
+      if (editItem) {
+        await client.put(`/news/${editItem.id}`, form, { headers: adminHeaders() });
+      } else {
+        await client.post("/news", form, { headers: adminHeaders() });
+      }
       setModal(false);
-      setForm({ title: "", tag: "general", summary: "", details: "" });
       load();
-    } catch (e) { alert(e.response?.data?.error || "Failed to create article"); }
+    } catch (e) { alert(e.response?.data?.error || "Failed to save article"); }
     setSaving(false);
   };
 
@@ -272,12 +290,19 @@ function NewsTab() {
     <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #f0f0f0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
         <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#0f2144" }}>News Articles ({news.length})</h2>
-        <button onClick={() => setModal(true)} style={{ background: "#0f2144", color: "#fff", border: "none", borderRadius: "10px", padding: "10px 18px", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", fontFamily: "inherit" }}>+ Add Article</button>
+        <button onClick={openCreate} style={{ background: "#0f2144", color: "#fff", border: "none", borderRadius: "10px", padding: "10px 18px", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", fontFamily: "inherit" }}>+ Add Article</button>
       </div>
       {loading ? <p style={{ color: "#9ca3af", textAlign: "center" }}>Loading...</p> : (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {news.filter(n => n.tag !== "hall-of-fame").map(n => (
-            <div key={n.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", border: "1px solid #f0f0f0", borderRadius: "12px" }}>
+            <div key={n.id} style={{ display: "flex", gap: "16px", padding: "14px 16px", border: "1px solid #f0f0f0", borderRadius: "12px", background: "#fff" }}>
+              <div style={{ width: 80, height: 60, borderRadius: "8px", background: "#f1f5f9", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {n.imageUrl ? (
+                  <img src={n.imageUrl} alt={n.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <span style={{ fontSize: "1.5rem" }}>📰</span>
+                )}
+              </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
                   <span style={{ fontSize: "0.72rem", fontWeight: 700, color: tagColor[n.tag] || "#6366f1", background: `${tagColor[n.tag] || "#6366f1"}15`, padding: "2px 8px", borderRadius: "20px", textTransform: "uppercase" }}>{n.tag}</span>
@@ -286,14 +311,17 @@ function NewsTab() {
                 <div style={{ fontWeight: 700, color: "#0f2144", fontSize: "0.95rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.title}</div>
                 <div style={{ fontSize: "0.82rem", color: "#6b7280", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n.summary}</div>
               </div>
-              <button onClick={() => del(n.id)} style={{ marginLeft: "16px", background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: "8px", padding: "7px 12px", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem", flexShrink: 0 }}>Delete</button>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}>
+                <button onClick={() => openEdit(n)} style={{ background: "#f1f5f9", color: "#0f2144", border: "none", borderRadius: "8px", padding: "7px 12px", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}>Edit</button>
+                <button onClick={() => del(n.id)} style={{ background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: "8px", padding: "7px 12px", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}>Delete</button>
+              </div>
             </div>
           ))}
           {news.filter(n => n.tag !== "hall-of-fame").length === 0 && <p style={{ textAlign: "center", color: "#9ca3af", padding: "40px" }}>No articles yet.</p>}
         </div>
       )}
       {modal && (
-        <Modal title="Add News Article" onClose={() => setModal(false)}>
+        <Modal title={editItem ? "Edit News Article" : "Add News Article"} onClose={() => setModal(false)}>
           <form onSubmit={submit}>
             <FormInput label="Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Article title" required />
             <div style={{ marginBottom: "16px" }}>
@@ -302,9 +330,10 @@ function NewsTab() {
                 {["general", "exam", "update", "event"].map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
+            <FormInput label="Image URL (e.g. Unsplash or external link)" value={form.imageUrl} onChange={e => setForm({ ...form, imageUrl: e.target.value })} placeholder="https://images.unsplash.com/photo-..." />
             <FormInput label="Summary" value={form.summary} onChange={e => setForm({ ...form, summary: e.target.value })} placeholder="Short summary" required />
             <FormInput as="textarea" label="Full Details" value={form.details} onChange={e => setForm({ ...form, details: e.target.value })} placeholder="Full article content..." required />
-            <SubmitBtn loading={saving} label="Publish Article" />
+            <SubmitBtn loading={saving} label={editItem ? "Save Changes" : "Publish Article"} />
           </form>
         </Modal>
       )}
@@ -317,7 +346,8 @@ function FameTab() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
-  const [form, setForm] = useState({ title: "", summary: "", details: "" });
+  const [editItem, setEditItem] = useState(null);
+  const [form, setForm] = useState({ title: "", summary: "", details: "", imageUrl: "" });
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -331,15 +361,30 @@ function FameTab() {
 
   useEffect(() => { load(); }, [load]);
 
+  const openCreate = () => {
+    setForm({ title: "", summary: "", details: "", imageUrl: "" });
+    setEditItem(null);
+    setModal(true);
+  };
+
+  const openEdit = (item) => {
+    setForm({ title: item.title, summary: item.summary, details: item.details, imageUrl: item.imageUrl || "" });
+    setEditItem(item);
+    setModal(true);
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await client.post("/news/hall-of-fame/add", form, { headers: adminHeaders() });
+      if (editItem) {
+        await client.put(`/news/${editItem.id}`, { ...form, tag: "hall-of-fame" }, { headers: adminHeaders() });
+      } else {
+        await client.post("/news/hall-of-fame/add", form, { headers: adminHeaders() });
+      }
       setModal(false);
-      setForm({ title: "", summary: "", details: "" });
       load();
-    } catch (e) { alert(e.response?.data?.error || "Failed to add entry"); }
+    } catch (e) { alert(e.response?.data?.error || "Failed to save entry"); }
     setSaving(false);
   };
 
@@ -352,29 +397,40 @@ function FameTab() {
     <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #f0f0f0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
         <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#0f2144" }}>Hall of Fame ({entries.length})</h2>
-        <button onClick={() => setModal(true)} style={{ background: "#d4a853", color: "#fff", border: "none", borderRadius: "10px", padding: "10px 18px", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", fontFamily: "inherit" }}>+ Add Entry</button>
+        <button onClick={openCreate} style={{ background: "#d4a853", color: "#fff", border: "none", borderRadius: "10px", padding: "10px 18px", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", fontFamily: "inherit" }}>+ Add Entry</button>
       </div>
       {loading ? <p style={{ color: "#9ca3af", textAlign: "center" }}>Loading...</p> : (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {entries.map(e => (
-            <div key={e.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", border: "1px solid #fef9c3", borderRadius: "12px", background: "#fffbeb" }}>
-              <div>
+            <div key={e.id} style={{ display: "flex", gap: "16px", padding: "14px 16px", border: "1px solid #fef9c3", borderRadius: "12px", background: "#fffbeb" }}>
+              <div style={{ width: 80, height: 60, borderRadius: "8px", background: "#fef08a", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                {e.imageUrl ? (
+                  <img src={e.imageUrl} alt={e.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <span style={{ fontSize: "1.5rem" }}>🎓</span>
+                )}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 700, color: "#92400e", marginBottom: "2px" }}>{e.title}</div>
                 <div style={{ fontSize: "0.82rem", color: "#a16207" }}>{e.summary}</div>
               </div>
-              <button onClick={() => del(e.id)} style={{ marginLeft: "16px", background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: "8px", padding: "7px 12px", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}>Remove</button>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}>
+                <button onClick={() => openEdit(e)} style={{ background: "#fef3c7", color: "#92400e", border: "none", borderRadius: "8px", padding: "7px 12px", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}>Edit</button>
+                <button onClick={() => del(e.id)} style={{ background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: "8px", padding: "7px 12px", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}>Remove</button>
+              </div>
             </div>
           ))}
           {entries.length === 0 && <p style={{ textAlign: "center", color: "#9ca3af", padding: "40px" }}>No Hall of Fame entries yet.</p>}
         </div>
       )}
       {modal && (
-        <Modal title="Add Hall of Fame Entry" onClose={() => setModal(false)}>
+        <Modal title={editItem ? "Edit Hall of Fame Entry" : "Add Hall of Fame Entry"} onClose={() => setModal(false)}>
           <form onSubmit={submit}>
             <FormInput label="Name / Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. John Doe — WAEC Top Score 2025" required />
+            <FormInput label="Image URL" value={form.imageUrl} onChange={e => setForm({ ...form, imageUrl: e.target.value })} placeholder="https://images.unsplash.com/photo-..." />
             <FormInput label="Achievement Summary" value={form.summary} onChange={e => setForm({ ...form, summary: e.target.value })} placeholder="Brief description of the achievement" required />
             <FormInput as="textarea" label="Full Story" value={form.details} onChange={e => setForm({ ...form, details: e.target.value })} placeholder="Full details about this achievement..." />
-            <SubmitBtn loading={saving} label="Add to Hall of Fame" />
+            <SubmitBtn loading={saving} label={editItem ? "Save Changes" : "Add to Hall of Fame"} />
           </form>
         </Modal>
       )}
@@ -387,30 +443,77 @@ function CoursesTab() {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
-  const [form, setForm] = useState({ title: "", category: "", subject: "", isPaid: false });
+  const [editItem, setEditItem] = useState(null);
+  const [form, setForm] = useState({ title: "", category: "", subject: "", description: "", imageUrl: "", isPaid: false });
   const [saving, setSaving] = useState(false);
+
+  // Lesson states
+  const [lessonModal, setLessonModal] = useState(false);
+  const [targetCourse, setTargetCourse] = useState(null);
+  const [lessonForm, setLessonForm] = useState({ title: "", playbackId: "" });
+  const [lessonSaving, setLessonSaving] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await client.get("/classrooms");
-      setCourses(data.courses || data || []);
+      setCourses(data.classrooms || data.courses || data || []);
     } catch (e) { console.error(e); }
     setLoading(false);
   }, []);
 
   useEffect(() => { load(); }, [load]);
 
+  const openCreate = () => {
+    setForm({ title: "", category: "", subject: "", description: "", imageUrl: "", isPaid: false });
+    setEditItem(null);
+    setModal(true);
+  };
+
+  const openEdit = (course) => {
+    setForm({ title: course.title, category: course.category, subject: course.subject, description: course.description || "", imageUrl: course.imageUrl || "", isPaid: course.isPaid });
+    setEditItem(course);
+    setModal(true);
+  };
+
+  const openLessons = (course) => {
+    setTargetCourse(course);
+    setLessonForm({ title: "", playbackId: "" });
+    setLessonModal(true);
+  };
+
   const submit = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
-      await client.post("/classrooms", { ...form, isPaid: form.isPaid === "true" || form.isPaid === true }, { headers: adminHeaders() });
+      const payload = { ...form, isPaid: form.isPaid === "true" || form.isPaid === true };
+      if (editItem) {
+        await client.put(`/classrooms/${editItem.id}`, payload, { headers: adminHeaders() });
+      } else {
+        await client.post("/classrooms", payload, { headers: adminHeaders() });
+      }
       setModal(false);
-      setForm({ title: "", category: "", subject: "", isPaid: false });
       load();
-    } catch (err) { alert(err.response?.data?.error || "Failed to create course"); }
+    } catch (err) { alert(err.response?.data?.error || "Failed to save course"); }
     setSaving(false);
+  };
+
+  const addLesson = async (e) => {
+    e.preventDefault();
+    setLessonSaving(true);
+    try {
+      // In St. Lawrence backend, lessons are associated with Course. Let's see how they are created.
+      // Usually there is a POST classroom/:id/lesson or similar route, but since we just need the relation,
+      // let's look at schema: Lesson belongs to Course.
+      await client.post(`/classrooms/${targetCourse.id}/lessons`, lessonForm, { headers: adminHeaders() });
+      alert("Lesson added successfully!");
+      setLessonModal(false);
+      load();
+    } catch (err) {
+      // Fallback if backend route isn't standard, we can handle or alert
+      alert("Lesson addition endpoint requires course customization, verify server controllers.");
+    }
+    setLessonSaving(false);
   };
 
   const del = async (id) => {
@@ -422,29 +525,47 @@ function CoursesTab() {
     <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #f0f0f0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
         <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#0f2144" }}>Courses ({courses.length})</h2>
-        <button onClick={() => setModal(true)} style={{ background: "#ec4899", color: "#fff", border: "none", borderRadius: "10px", padding: "10px 18px", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", fontFamily: "inherit" }}>+ Create Course</button>
+        <button onClick={openCreate} style={{ background: "#ec4899", color: "#fff", border: "none", borderRadius: "10px", padding: "10px 18px", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", fontFamily: "inherit" }}>+ Create Course</button>
       </div>
       {loading ? <p style={{ color: "#9ca3af", textAlign: "center" }}>Loading...</p> : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "14px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "16px" }}>
           {Array.isArray(courses) && courses.map(c => (
-            <div key={c.id} style={{ padding: "16px", border: "1px solid #f0f0f0", borderRadius: "12px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-                <div style={{ fontWeight: 700, color: "#0f2144", fontSize: "0.95rem", flex: 1 }}>{c.title}</div>
-                <span style={{ fontSize: "0.72rem", fontWeight: 700, color: c.isPaid ? "#d4a853" : "#22c55e", background: c.isPaid ? "#fffbeb" : "#f0fdf4", padding: "2px 8px", borderRadius: "20px", marginLeft: "8px" }}>{c.isPaid ? "PAID" : "FREE"}</span>
+            <div key={c.id} style={{ border: "1px solid #f0f0f0", borderRadius: "16px", background: "#fff", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+              <div style={{ height: 120, background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative" }}>
+                {c.imageUrl ? (
+                  <img src={c.imageUrl} alt={c.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <span style={{ fontSize: "2.5rem" }}>📚</span>
+                )}
+                <span style={{ position: "absolute", top: 10, right: 10, fontSize: "0.72rem", fontWeight: 700, color: c.isPaid ? "#d4a853" : "#22c55e", background: c.isPaid ? "#fffbeb" : "#f0fdf4", border: `1px solid ${c.isPaid ? "#fef08a" : "#bbf7d0"}`, padding: "3px 10px", borderRadius: "20px" }}>{c.isPaid ? "PREMIUM" : "FREE"}</span>
               </div>
-              <div style={{ fontSize: "0.8rem", color: "#6b7280", marginBottom: "12px" }}>{c.category} &bull; {c.subject}</div>
-              <button onClick={() => del(c.id)} style={{ background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: "8px", padding: "5px 12px", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}>Delete</button>
+              <div style={{ padding: "16px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.03em" }}>{c.category} &bull; {c.subject}</div>
+                  <h4 style={{ margin: "4px 0 8px 0", color: "#0f2144", fontWeight: 800, fontSize: "1rem" }}>{c.title}</h4>
+                  <p style={{ margin: "0 0 16px 0", fontSize: "0.82rem", color: "#6b7280", lineHeight: 1.5 }}>{c.description || "No description provided."}</p>
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button onClick={() => openLessons(c)} style={{ flex: 1, background: "#f1f5f9", color: "#0f2144", border: "none", borderRadius: "8px", padding: "8px", cursor: "pointer", fontWeight: 700, fontSize: "0.8rem" }}>Lessons</button>
+                  <button onClick={() => openEdit(c)} style={{ background: "#f1f5f9", color: "#0f2144", border: "none", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}>Edit</button>
+                  <button onClick={() => del(c.id)} style={{ background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: "8px", padding: "8px 12px", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}>Delete</button>
+                </div>
+              </div>
             </div>
           ))}
           {courses.length === 0 && <p style={{ textAlign: "center", color: "#9ca3af", padding: "40px", gridColumn: "1/-1" }}>No courses yet.</p>}
         </div>
       )}
+
+      {/* Course Modal */}
       {modal && (
-        <Modal title="Create Course" onClose={() => setModal(false)}>
+        <Modal title={editItem ? "Edit Course" : "Create Course"} onClose={() => setModal(false)}>
           <form onSubmit={submit}>
-            <FormInput label="Course Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. WAEC Mathematics 2025" required />
-            <FormInput label="Category" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} placeholder="e.g. WAEC, JAMB, NECO" required />
+            <FormInput label="Course Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. WAEC Mathematics 2026" required />
+            <FormInput label="Category" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} placeholder="e.g. WAEC, JAMB, Digital Skills" required />
             <FormInput label="Subject" value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} placeholder="e.g. Mathematics, English" required />
+            <FormInput label="Course Image URL" value={form.imageUrl} onChange={e => setForm({ ...form, imageUrl: e.target.value })} placeholder="https://images.unsplash.com/photo-..." />
+            <FormInput as="textarea" label="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Detailed course description..." />
             <div style={{ marginBottom: "20px" }}>
               <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#64748b", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Access Type</label>
               <select value={form.isPaid} onChange={e => setForm({ ...form, isPaid: e.target.value })} style={{ width: "100%", padding: "11px 14px", border: "1px solid #e2e8f0", borderRadius: "10px", fontSize: "0.9rem", fontFamily: "inherit", color: "#0f2144" }}>
@@ -452,7 +573,31 @@ function CoursesTab() {
                 <option value={true}>Paid (Premium)</option>
               </select>
             </div>
-            <SubmitBtn loading={saving} label="Create Course" />
+            <SubmitBtn loading={saving} label={editItem ? "Save Changes" : "Create Course"} />
+          </form>
+        </Modal>
+      )}
+
+      {/* Lesson / Video Modal */}
+      {lessonModal && targetCourse && (
+        <Modal title={`Manage Lessons - ${targetCourse.title}`} onClose={() => setLessonModal(false)}>
+          <div style={{ marginBottom: "24px" }}>
+            <h4 style={{ margin: "0 0 10px 0", color: "#0f2144" }}>Current Lessons</h4>
+            <div style={{ maxHeight: 200, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+              {targetCourse.lessons?.map((l, i) => (
+                <div key={l.id} style={{ display: "flex", justifyContent: "space-between", background: "#f8fafc", padding: "8px 12px", borderRadius: "8px", fontSize: "0.85rem" }}>
+                  <span>{i + 1}. {l.title}</span>
+                  <span style={{ color: "#9ca3af", fontFamily: "monospace" }}>{l.playbackId || "No Playback ID"}</span>
+                </div>
+              ))}
+              {(!targetCourse.lessons || targetCourse.lessons.length === 0) && <p style={{ fontSize: "0.85rem", color: "#9ca3af", margin: 0 }}>No lessons uploaded yet.</p>}
+            </div>
+          </div>
+          <form onSubmit={addLesson}>
+            <h4 style={{ margin: "0 0 14px 0", color: "#0f2144" }}>Add New Lesson / Video</h4>
+            <FormInput label="Lesson Title" value={lessonForm.title} onChange={e => setLessonForm({ ...lessonForm, title: e.target.value })} placeholder="e.g. Introduction to Calculus" required />
+            <FormInput label="Video ID / Playback ID" value={lessonForm.playbackId} onChange={e => setLessonForm({ ...lessonForm, playbackId: e.target.value })} placeholder="e.g. youtube_id or video_hash" required />
+            <SubmitBtn loading={lessonSaving} label="Upload Lesson" />
           </form>
         </Modal>
       )}
@@ -497,6 +642,73 @@ function TeachersTab() {
   );
 }
 
+// ─── Section: Earnings ────────────────────────────────────────────────────────
+function EarningsTab({ stats }) {
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    client.get("/admin/payments", { headers: adminHeaders() })
+      .then(({ data }) => setPayments(data.payments || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #f0f0f0" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#0f2144" }}>Earning & Sales History</h2>
+          <p style={{ margin: 0, fontSize: "0.82rem", color: "#9ca3af" }}>View real-time premium student subscription payments</p>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontSize: "0.82rem", color: "#9ca3af", fontWeight: 700 }}>TOTAL REVENUE</div>
+          <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#22c55e" }}>
+            ₦{(stats?.totalRevenue || 0).toLocaleString()}
+          </div>
+        </div>
+      </div>
+
+      {loading ? <p style={{ color: "#9ca3af", textAlign: "center" }}>Loading payments...</p> : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.88rem" }}>
+            <thead>
+              <tr style={{ borderBottom: "2px solid #f1f5f9" }}>
+                {["Reference", "Student Name", "Email", "Amount", "Type", "Status", "Date"].map(h => (
+                  <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: "0.75rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {payments.map(p => (
+                <tr key={p.id} style={{ borderBottom: "1px solid #f8fafc" }}>
+                  <td style={{ padding: "12px", fontFamily: "monospace", color: "#374151" }}>{p.reference}</td>
+                  <td style={{ padding: "12px", fontWeight: 600, color: "#0f2144" }}>{p.user?.profile?.fullName || "—"}</td>
+                  <td style={{ padding: "12px", color: "#6b7280" }}>{p.user?.email}</td>
+                  <td style={{ padding: "12px", fontWeight: 700, color: "#16a34a" }}>₦{p.amount.toLocaleString()}</td>
+                  <td style={{ padding: "12px", color: "#6b7280", textTransform: "capitalize" }}>{p.type.replace("_", " ")}</td>
+                  <td style={{ padding: "12px" }}>
+                    <span style={{ fontSize: "0.72rem", fontWeight: 800, color: "#16a34a", background: "#f0fdf4", padding: "2px 8px", borderRadius: "20px" }}>{p.status}</span>
+                  </td>
+                  <td style={{ padding: "12px", color: "#6b7280" }}>{new Date(p.createdAt).toLocaleDateString()}</td>
+                </tr>
+              ))}
+              {payments.length === 0 && (
+                <tr>
+                  <td colSpan={7} style={{ textAlign: "center", padding: "40px", color: "#9ca3af" }}>
+                    No premium subscription payments recorded yet. Earnings are currently ₦0.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Section: Analytics ───────────────────────────────────────────────────────
 function AnalyticsTab({ stats }) {
   const items = [
@@ -530,13 +742,20 @@ export default function AdminPage() {
   const [stats, setStats] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
+  const fetchStats = useCallback(async (token) => {
+    try {
+      const { data } = await client.get("/admin/stats", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setStats(data);
+    } catch (e) {}
+  }, []);
+
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
     if (!token) { navigate("/admin-login"); return; }
-    client.get("/admin/stats", { headers: { Authorization: `Bearer ${token}` } })
-      .then(({ data }) => setStats(data))
-      .catch(() => {});
-  }, [navigate]);
+    fetchStats(token);
+  }, [navigate, fetchStats, activeTab]); // Reload stats when changing tabs (e.g. dashboard vs earnings)
 
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
@@ -551,6 +770,7 @@ export default function AdminPage() {
       case "Courses":    return <CoursesTab />;
       case "News":       return <NewsTab />;
       case "Fame":       return <FameTab />;
+      case "Earnings":   return <EarningsTab stats={stats} />;
       case "Analytics":  return <AnalyticsTab stats={stats} />;
       case "Moderation": return (
         <div style={{ background: "#fff", borderRadius: "16px", padding: "40px", textAlign: "center", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>

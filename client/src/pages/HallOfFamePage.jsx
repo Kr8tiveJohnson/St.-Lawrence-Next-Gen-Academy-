@@ -1,55 +1,40 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import logoImg from "../assets/St. Lawrence Next Gen Academy logo.png";
+import client from "../api/client";
 
-const HALL_OF_FAME = [
+const FALLBACK_HALL = [
   {
-    name: "Adaeze Okonkwo",
-    track: "WAEC SSCE · 2024",
-    score: "9 A1s",
-    achievement: "University of Lagos — Medicine",
-    photo: "🏆",
+    title: "Adaeze Okonkwo",
+    summary: "9 A1s",
+    details: "University of Lagos — Medicine",
+    imageUrl: null
   },
   {
-    name: "Chukwuemeka Eze",
-    track: "JAMB UTME · 2024",
-    score: "340 / 400",
-    achievement: "University of Ibadan — Engineering",
-    photo: "🏅",
-  },
-  {
-    name: "Fatima Al-Hassan",
-    track: "NECO SSCE · 2024",
-    score: "8 Distinctions",
-    achievement: "Ahmadu Bello University — Law",
-    photo: "🎓",
-  },
-  {
-    name: "Ibrahim Musa",
-    track: "Digital Skills · 2024",
-    score: "Top Graduate",
-    achievement: "Now earning $800/month remotely",
-    photo: "💻",
-  },
-  {
-    name: "Oluwaseun Adeyemi",
-    track: "JAMB UTME · 2023",
-    score: "315 / 400",
-    achievement: "Obafemi Awolowo University — Pharmacy",
-    photo: "🏅",
-  },
-  {
-    name: "Zainab Bello",
-    track: "WAEC SSCE · 2023",
-    score: "7 A1s",
-    achievement: "Federal University of Technology Minna — Computer Science",
-    photo: "🏆",
-  },
+    title: "Chukwuemeka Eze",
+    summary: "340 / 400",
+    details: "University of Ibadan — Engineering",
+    imageUrl: null
+  }
 ];
 
 export default function HallOfFamePage() {
+  const [entries, setEntries] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     window.scrollTo(0, 0);
+    
+    // Fetch live entries
+    client.get("/news/hall-of-fame/entries")
+      .then(({ data }) => {
+        setEntries(data.entries && data.entries.length > 0 ? data.entries : FALLBACK_HALL);
+      })
+      .catch((err) => {
+        console.error("Failed to load Hall of Fame entries", err);
+        setEntries(FALLBACK_HALL);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   return (
@@ -75,7 +60,7 @@ export default function HallOfFamePage() {
           zIndex: 100,
         }}
       >
-        <Link to="/" className="nav-logo">
+        <Link to="/" className="nav-logo" style={{ textDecoration: "none" }}>
           <img
             src={logoImg}
             alt="St. Lawrence Next Gen Academy"
@@ -90,10 +75,10 @@ export default function HallOfFamePage() {
           className="internal-page-actions"
           style={{ display: "flex", gap: "16px", alignItems: "center" }}
         >
-          <Link to="/login" className="btn btn-secondary">
+          <Link to="/login" className="btn btn-secondary" style={{ textDecoration: "none" }}>
             Log In
           </Link>
-          <Link to="/register" className="btn btn-primary">
+          <Link to="/register" className="btn btn-primary" style={{ textDecoration: "none" }}>
             Get Started
           </Link>
         </div>
@@ -111,56 +96,64 @@ export default function HallOfFamePage() {
           </p>
         </div>
 
-        <div className="hall-preview-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px" }}>
-          {HALL_OF_FAME.map((student, index) => (
-            <div
-              key={index}
-              className="hall-preview-card"
-              style={{
-                background: "var(--white)",
-                padding: "32px",
-                borderRadius: "24px",
-                border: "1px solid var(--border)",
-                boxShadow: "0 12px 32px rgba(0,0,0,0.03)",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                textAlign: "center"
-              }}
-            >
-              <div className="hall-preview-top" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-                <div style={{
-                  fontSize: "3rem",
-                  width: "80px",
-                  height: "80px",
-                  background: "var(--off-white)",
-                  borderRadius: "50%",
+        {loading ? (
+          <p style={{ color: "var(--text-light)", textAlign: "center", padding: "40px" }}>Loading students...</p>
+        ) : (
+          <div className="hall-preview-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px", display: "grid" }}>
+            {entries.map((student, index) => (
+              <div
+                key={index}
+                className="hall-preview-card"
+                style={{
+                  background: "var(--white)",
+                  padding: "32px",
+                  borderRadius: "24px",
+                  border: "1px solid var(--border)",
+                  boxShadow: "0 12px 32px rgba(0,0,0,0.03)",
                   display: "flex",
+                  flexDirection: "column",
                   alignItems: "center",
-                  justifyContent: "center"
-                }}>
-                  {student.photo}
+                  textAlign: "center"
+                }}
+              >
+                <div className="hall-preview-top" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+                  <div style={{
+                    width: "80px",
+                    height: "80px",
+                    background: "var(--off-white)",
+                    borderRadius: "50%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    overflow: "hidden"
+                  }}>
+                    {student.imageUrl ? (
+                      <img src={student.imageUrl} alt={student.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <span style={{ fontSize: "2.5rem" }}>🏆</span>
+                    )}
+                  </div>
+                  <span className="hall-preview-track" style={{ 
+                    background: "rgba(212,168,83,0.15)", 
+                    color: "#b45309", 
+                    padding: "4px 12px", 
+                    borderRadius: "12px", 
+                    fontSize: "0.8rem", 
+                    fontWeight: 700 
+                  }}>{student.tag || "STUDENT WIN"}</span>
                 </div>
-                <span className="hall-preview-track" style={{ 
-                  background: "rgba(212,168,83,0.15)", 
-                  color: "#b45309", 
-                  padding: "4px 12px", 
-                  borderRadius: "12px", 
-                  fontSize: "0.8rem", 
-                  fontWeight: 700 
-                }}>{student.track}</span>
+                <h3 style={{ fontSize: "1.4rem", color: "var(--navy)", marginBottom: "8px" }}>{student.title}</h3>
+                <div className="hall-score" style={{ 
+                  fontSize: "1.6rem", 
+                  fontWeight: 900, 
+                  color: "var(--gold)", 
+                  marginBottom: "12px" 
+                }}>{student.summary}</div>
+                <p style={{ color: "var(--text-2)", lineHeight: "1.5" }}>{student.details}</p>
               </div>
-              <h3 style={{ fontSize: "1.4rem", color: "var(--navy)", marginBottom: "8px" }}>{student.name}</h3>
-              <div className="hall-score" style={{ 
-                fontSize: "1.6rem", 
-                fontWeight: 900, 
-                color: "var(--gold)", 
-                marginBottom: "12px" 
-              }}>{student.score}</div>
-              <p style={{ color: "var(--text-2)", lineHeight: "1.5" }}>{student.achievement}</p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         <div className="hall-cta-card" style={{
           marginTop: "60px",
@@ -188,7 +181,7 @@ export default function HallOfFamePage() {
             }}>Your Success Story Could Be Here</span>
             <h3 style={{ fontSize: "1.8rem", margin: 0 }}>Join thousands of students preparing for standout results</h3>
           </div>
-          <Link to="/register" className="btn btn-primary" style={{ background: "var(--gold)", color: "var(--navy)", border: "none" }}>
+          <Link to="/register" className="btn btn-primary" style={{ background: "var(--gold)", color: "var(--navy)", border: "none", textDecoration: "none" }}>
             Start Your Journey Today
           </Link>
         </div>

@@ -1,4 +1,4 @@
-﻿const prisma = require('../config/database');
+const prisma = require('../config/database');
 
 /**
  * Get all classrooms
@@ -49,7 +49,7 @@ async function getClassroomById(req, res) {
  */
 async function createClassroom(req, res) {
   try {
-    const { title, category, subject, isPaid } = req.body;
+    const { title, category, subject, description, imageUrl, isPaid } = req.body;
 
     if (!title || !category || !subject) {
       return res.status(400).json({ error: 'Title, category, and subject are required' });
@@ -60,6 +60,8 @@ async function createClassroom(req, res) {
         title,
         category,
         subject,
+        description: description || null,
+        imageUrl: imageUrl || null,
         isPaid: isPaid || false
       }
     });
@@ -77,7 +79,7 @@ async function createClassroom(req, res) {
 async function updateClassroom(req, res) {
   try {
     const { id } = req.params;
-    const { title, category, subject, isPaid } = req.body;
+    const { title, category, subject, description, imageUrl, isPaid } = req.body;
 
     const classroom = await prisma.course.update({
       where: { id },
@@ -85,6 +87,8 @@ async function updateClassroom(req, res) {
         title: title || undefined,
         category: category || undefined,
         subject: subject || undefined,
+        description: description !== undefined ? description : undefined,
+        imageUrl: imageUrl !== undefined ? imageUrl : undefined,
         isPaid: isPaid !== undefined ? isPaid : undefined
       },
       include: { lessons: true }
