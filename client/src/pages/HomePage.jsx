@@ -380,9 +380,7 @@ export default function HomePage() {
         <div className="portal-grid-accent" />
         <div className="wrap portal-hero-inner">
           <div className="portal-hero-copy reveal">
-            <div className="portal-eyebrow">
 
-            </div>
             <h1 className="portal-title">
               Education, exam prep, and digital skills in one trusted platform
             </h1>
