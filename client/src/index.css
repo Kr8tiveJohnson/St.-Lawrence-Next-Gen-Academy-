@@ -2851,11 +2851,13 @@ img {
     }
 
     .portal-hero {
-        padding-top: 112px;
+        padding-top: 80px;
     }
 
     .portal-title {
         font-size: clamp(2.25rem, 8vw, 3.2rem);
+        font-weight: 900;
+        text-shadow: 0 4px 16px rgba(143, 106, 23, 0.25);
     }
 
     .portal-subtitle {
@@ -2924,7 +2926,7 @@ img {
 
 @media (max-width: 560px) {
     .portal-hero {
-        padding-top: 104px;
+        padding-top: 64px;
     }
 
     .portal-eyebrow,
