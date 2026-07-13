@@ -124,30 +124,20 @@ export default function ProfilePage() {
             {/* Quick stats */}
             <div className="profile-stats-row">
               <div className="profile-stat">
-                <div className="profile-stat-num">2</div>
-                <div className="profile-stat-lbl">Courses Active</div>
+                <div className="profile-stat-num">0</div>
+                <div className="profile-stat-lbl">{user.role === 'TEACHER' ? 'Courses Taught' : 'Courses Active'}</div>
               </div>
               <div className="profile-stat">
-                <div
-                  className="profile-stat-num"
-                  style={{ color: "var(--gold)" }}
-                >
-                  1
-                </div>
-                <div className="profile-stat-lbl">Certificates</div>
+                <div className="profile-stat-num" style={{ color: "var(--gold)" }}>0</div>
+                <div className="profile-stat-lbl">{user.role === 'TEACHER' ? 'Total Students' : 'Certificates'}</div>
               </div>
               <div className="profile-stat">
-                <div className="profile-stat-num">18</div>
-                <div className="profile-stat-lbl">Hours Learned</div>
+                <div className="profile-stat-num">0</div>
+                <div className="profile-stat-lbl">{user.role === 'TEACHER' ? 'Hours Taught' : 'Hours Learned'}</div>
               </div>
               <div className="profile-stat">
-                <div
-                  className="profile-stat-num"
-                  style={{ color: "var(--green)" }}
-                >
-                  4
-                </div>
-                <div className="profile-stat-lbl">Lessons This Week</div>
+                <div className="profile-stat-num" style={{ color: "var(--green)" }}>0</div>
+                <div className="profile-stat-lbl">{user.role === 'TEACHER' ? 'Resources Shared' : 'Lessons This Week'}</div>
               </div>
             </div>
           </div>
@@ -159,10 +149,10 @@ export default function ProfilePage() {
           <div className="dashboard-sidebar">
             {[
               { label: "Overview", icon: "🏠" },
-              { label: "My Courses", icon: "📚" },
-              { label: "Certificates", icon: "🏆" },
+              { label: user.role === 'TEACHER' ? "My Classes" : "My Courses", icon: "📚" },
+              user.role === 'TEACHER' ? null : { label: "Certificates", icon: "🏆" },
               { label: "Settings", icon: "⚙️" },
-            ].map(({ label, icon }) => (
+            ].filter(Boolean).map(({ label, icon }) => (
               <button
                 key={label}
                 onClick={() => setActiveTab(label)}
@@ -196,143 +186,32 @@ export default function ProfilePage() {
                 <div className="dashboard-grid">
                   <div className="dash-card">
                     <div className="dash-card-icon blue">📘</div>
-                    <h3>Courses in Progress</h3>
-                    <p
-                      style={{
-                        fontSize: "2.4rem",
-                        fontWeight: 900,
-                        fontFamily: "var(--font-h)",
-                        color: "var(--navy)",
-                        margin: "6px 0 0",
-                      }}
-                    >
-                      2
-                    </p>
+                    <h3>{user.role === 'TEACHER' ? 'Active Classes' : 'Courses in Progress'}</h3>
+                    <p style={{ fontSize: "2.4rem", fontWeight: 900, fontFamily: "var(--font-h)", color: "var(--navy)", margin: "6px 0 0" }}>0</p>
                   </div>
                   <div className="dash-card">
-                    <div className="dash-card-icon gold">🏆</div>
-                    <h3>Certificates Earned</h3>
-                    <p
-                      style={{
-                        fontSize: "2.4rem",
-                        fontWeight: 900,
-                        fontFamily: "var(--font-h)",
-                        color: "var(--gold)",
-                        margin: "6px 0 0",
-                      }}
-                    >
-                      1
-                    </p>
+                    <div className="dash-card-icon gold">{user.role === 'TEACHER' ? '👥' : '🏆'}</div>
+                    <h3>{user.role === 'TEACHER' ? 'Total Students' : 'Certificates Earned'}</h3>
+                    <p style={{ fontSize: "2.4rem", fontWeight: 900, fontFamily: "var(--font-h)", color: "var(--gold)", margin: "6px 0 0" }}>0</p>
                   </div>
                   <div className="dash-card">
                     <div className="dash-card-icon green">⏱️</div>
-                    <h3>Hours Learned</h3>
-                    <p
-                      style={{
-                        fontSize: "2.4rem",
-                        fontWeight: 900,
-                        fontFamily: "var(--font-h)",
-                        color: "var(--navy)",
-                        margin: "6px 0 0",
-                      }}
-                    >
-                      18
-                    </p>
+                    <h3>{user.role === 'TEACHER' ? 'Hours Taught' : 'Hours Learned'}</h3>
+                    <p style={{ fontSize: "2.4rem", fontWeight: 900, fontFamily: "var(--font-h)", color: "var(--navy)", margin: "6px 0 0" }}>0</p>
                   </div>
                 </div>
 
                 {/* Continue Learning */}
                 <div>
-                  <h3
-                    style={{
-                      fontFamily: "var(--font-h)",
-                      fontSize: "1.25rem",
-                      fontWeight: 800,
-                      color: "var(--navy)",
-                      marginBottom: "16px",
-                    }}
-                  >
-                    Continue Learning
+                  <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.25rem", fontWeight: 800, color: "var(--navy)", marginBottom: "16px" }}>
+                    {user.role === 'TEACHER' ? 'Recent Activity' : 'Continue Learning'}
                   </h3>
-                  <div
-                    className="dash-card dashboard-feature-card"
-                    style={{
-                      display: "flex",
-                      gap: "24px",
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "72px",
-                        height: "72px",
-                        borderRadius: "16px",
-                        background: "linear-gradient(135deg, #e0f2fe, #bfdbfe)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "2rem",
-                        flexShrink: 0,
-                      }}
-                    >
-                      💻
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          fontSize: "0.75rem",
-                          color: "var(--text-3)",
-                          fontWeight: 700,
-                          textTransform: "uppercase",
-                          letterSpacing: "0.06em",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        Tech &amp; Design
-                      </div>
-                      <h4
-                        style={{
-                          fontFamily: "var(--font-h)",
-                          fontSize: "1.1rem",
-                          fontWeight: 800,
-                          color: "var(--navy)",
-                          marginBottom: "10px",
-                        }}
-                      >
-                        Full-Stack Web Development
-                      </h4>
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "12px",
-                        }}
-                      >
-                        <div className="progress-bar-track" style={{ flex: 1 }}>
-                          <div
-                            className="progress-bar-fill"
-                            style={{ width: "45%" }}
-                          />
-                        </div>
-                        <span
-                          style={{
-                            fontSize: "0.82rem",
-                            fontWeight: 700,
-                            color: "var(--text-2)",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          45%
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      className="btn-primary"
-                      style={{ padding: "10px 22px", whiteSpace: "nowrap" }}
-                    >
-                      Resume →
-                    </button>
+                  <div className="dash-card dashboard-feature-card" style={{ padding: "30px", textAlign: "center", color: "var(--text-3)" }}>
+                    <div style={{ fontSize: "3rem", marginBottom: "10px" }}>📭</div>
+                    <p style={{ margin: 0, fontWeight: 500 }}>{user.role === 'TEACHER' ? 'You have no recent activity.' : 'You are not enrolled in any courses yet.'}</p>
+                    {user.role !== 'TEACHER' && (
+                      <Link to="/classrooms" className="btn-primary" style={{ display: "inline-flex", marginTop: "20px" }}>Browse Courses</Link>
+                    )}
                   </div>
                 </div>
               </div>
@@ -352,167 +231,24 @@ export default function ProfilePage() {
                 >
                   My Certificates
                 </h3>
-                <div
-                  style={{
-                    background:
-                      "linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%)",
-                    borderRadius: "28px",
-                    padding: "40px 32px",
-                    color: "var(--white)",
-                    position: "relative",
-                    overflow: "hidden",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    textAlign: "center",
-                    border: "3px solid rgba(212,168,83,0.35)",
-                    boxShadow: "0 24px 48px rgba(29, 78, 216, 0.22)",
-                  }}
-                >
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      background:
-                        "radial-gradient(circle at 80% 20%, rgba(212,168,83,0.12) 0%, transparent 60%)",
-                      pointerEvents: "none",
-                    }}
-                  />
-                  <div
-                    style={{
-                      width: "80px",
-                      height: "80px",
-                      borderRadius: "50%",
-                      background: "var(--gold)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: "2.4rem",
-                      marginBottom: "20px",
-                      position: "relative",
-                      zIndex: 1,
-                    }}
-                  >
-                    🏆
+                  <div className="dash-card" style={{ textAlign: "center", padding: "40px", color: "var(--text-3)" }}>
+                    <div style={{ fontSize: "3rem", marginBottom: "10px" }}>🏅</div>
+                    <p style={{ margin: 0, fontWeight: 500 }}>You haven't earned any certificates yet.</p>
                   </div>
-                  <div
-                    style={{
-                      fontSize: "0.78rem",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.18em",
-                      color: "var(--gold)",
-                      fontWeight: 800,
-                      marginBottom: "10px",
-                      position: "relative",
-                      zIndex: 1,
-                    }}
-                  >
-                    Certificate of Completion
-                  </div>
-                  <h2
-                    style={{
-                      fontFamily: "var(--font-h)",
-                      fontSize: "1.9rem",
-                      fontWeight: 900,
-                      marginBottom: "10px",
-                      position: "relative",
-                      zIndex: 1,
-                    }}
-                  >
-                    Virtual Assistant Professional
-                  </h2>
-                  <p
-                    style={{
-                      color: "rgba(255,255,255,0.7)",
-                      marginBottom: "28px",
-                      fontSize: "1rem",
-                      maxWidth: "380px",
-                      position: "relative",
-                      zIndex: 1,
-                    }}
-                  >
-                    This certifies that{" "}
-                    <strong>
-                      {user.firstName} {user.lastName || ""}
-                    </strong>{" "}
-                    has successfully completed the premium curriculum and
-                    milestone projects.
-                  </p>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "12px",
-                      flexWrap: "wrap",
-                      justifyContent: "center",
-                      position: "relative",
-                      zIndex: 1,
-                    }}
-                  >
-                    <button
-                      className="btn-primary"
-                      style={{
-                        background: "var(--white)",
-                        color: "var(--navy)",
-                        boxShadow: "none",
-                      }}
-                    >
-                      Download PDF
-                    </button>
-                    <button
-                      className="btn-ghost"
-                      style={{
-                        borderColor: "var(--gold)",
-                        color: "var(--gold)",
-                      }}
-                    >
-                      Share to LinkedIn
-                    </button>
-                  </div>
-                </div>
               </div>
             )}
 
-            {/* ── MY COURSES TAB ── */}
-            {activeTab === "My Courses" && (
+            {/* ── MY COURSES / MY CLASSES TAB ── */}
+            {(activeTab === "My Courses" || activeTab === "My Classes") && (
               <div>
                 <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.25rem", fontWeight: 800, color: "var(--navy)", marginBottom: "20px" }}>
-                  Enrolled Courses
+                  {user.role === 'TEACHER' ? 'My Classes' : 'Enrolled Courses'}
                 </h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                  {/* Course Card 1 */}
-                  <div className="dash-card profile-course-row" style={{ display: "flex", gap: "20px", alignItems: "center", flexWrap: "wrap" }}>
-                    <div style={{ width: "80px", height: "80px", borderRadius: "16px", background: "rgba(59,130,246,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2.4rem" }}>
-                      💻
-                    </div>
-                    <div style={{ flex: 1, minWidth: "200px" }}>
-                      <span className="profile-badge blue" style={{ marginBottom: "8px", display: "inline-block" }}>Tech &amp; Design</span>
-                      <h4 style={{ fontFamily: "var(--font-h)", fontSize: "1.15rem", fontWeight: 800, color: "var(--navy)", margin: "0 0 12px 0" }}>
-                        Full-Stack Web Development
-                      </h4>
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                        <div className="progress-bar-track" style={{ flex: 1 }}><div className="progress-bar-fill" style={{ width: "45%" }} /></div>
-                        <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-2)" }}>45%</span>
-                      </div>
-                    </div>
-                    <button className="btn-primary" style={{ whiteSpace: "nowrap" }}>Resume Lesson</button>
-                  </div>
-
-                  <div className="dash-card profile-course-row" style={{ display: "flex", gap: "20px", alignItems: "center", flexWrap: "wrap" }}>
-                    <div style={{ width: "80px", height: "80px", borderRadius: "16px", background: "rgba(34,197,94,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2.4rem" }}>
-                      📈
-                    </div>
-                    <div style={{ flex: 1, minWidth: "200px" }}>
-                      <span className="profile-badge green" style={{ marginBottom: "8px", display: "inline-block" }}>Data Analysis</span>
-                      <h4 style={{ fontFamily: "var(--font-h)", fontSize: "1.15rem", fontWeight: 800, color: "var(--navy)", margin: "0 0 12px 0" }}>
-                        Data Analysis Basics using Excel
-                      </h4>
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                        <div className="progress-bar-track" style={{ flex: 1 }}><div className="progress-bar-fill" style={{ width: "12%" }} /></div>
-                        <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-2)" }}>12%</span>
-                      </div>
-                    </div>
-                    <button className="btn-primary" style={{ whiteSpace: "nowrap" }}>Resume Lesson</button>
-                  </div>
+                <div className="dash-card" style={{ padding: "40px", textAlign: "center", color: "var(--text-3)" }}>
+                  <div style={{ fontSize: "3rem", marginBottom: "10px" }}>📭</div>
+                  <p style={{ margin: 0, fontWeight: 500 }}>
+                    {user.role === 'TEACHER' ? "You haven't created any classes yet." : "You haven't enrolled in any courses yet."}
+                  </p>
                 </div>
               </div>
             )}

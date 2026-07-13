@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import studentImg from "../assets/student.png";
 import logoImg from "../assets/St. Lawrence Next Gen Academy logo.png";
+import TimeWeatherWidget from "../components/common/TimeWeatherWidget.jsx";
 
 function AnimatedCounter({ value, suffix = "+" }) {
   const [count, setCount] = useState(0);
@@ -311,7 +312,7 @@ export default function HomePage() {
           </div>
         </Link>
 
-        <div className="nav-links">
+        <div className="nav-links hide-on-mobile">
           <a href="#home">Home</a>
           <a href="#quick-access">Quick Access</a>
           <a href="#news">News</a>
@@ -319,9 +320,12 @@ export default function HomePage() {
           <a href="#pricing">Pricing</a>
         </div>
 
-        <Link to="/register" className="nav-cta">
-          Start Learning Free
-        </Link>
+        <div className="nav-actions hide-on-mobile" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <TimeWeatherWidget />
+          <Link to="/register" className="nav-cta">
+            Start Learning Free
+          </Link>
+        </div>
 
         <button
           className="nav-hamburger"
@@ -382,7 +386,7 @@ export default function HomePage() {
           <div className="portal-hero-copy reveal">
 
             <h1 className="portal-title">
-              Education, exam prep, and digital skills in one trusted platform
+              Education, Exam Prep, And Digital Skills In One Trusted Platform
             </h1>
             <p className="portal-subtitle">
               Prepare for WAEC, JAMB, NECO, and GCE while building real-world

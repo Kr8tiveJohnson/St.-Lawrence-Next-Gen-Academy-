@@ -14,6 +14,12 @@ async function authMiddleware(req, res, next) {
     return res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
   }
 
+  // Standalone admin token (no user record in DB)
+  if (decoded.isStandaloneAdmin) {
+    req.user = { id: 'admin', role: 'ADMIN', isStandaloneAdmin: true };
+    return next();
+  }
+
   try {
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },

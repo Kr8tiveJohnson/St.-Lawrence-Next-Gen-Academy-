@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/auth.middleware');
 const userController = require('../controllers/user.controller');
@@ -17,6 +17,9 @@ router.post('/me/photo', userController.uploadPhoto);
 
 // Update privacy settings
 router.put('/me/privacy', userController.updatePrivacySettings);
+
+// Update cookie consent
+router.put('/me/cookies', userController.updateCookieConsent);
 
 // Get user by ID (with privacy controls)
 router.get('/:id', userController.getUserById);

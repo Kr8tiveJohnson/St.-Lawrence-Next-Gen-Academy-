@@ -5,7 +5,7 @@ const sanitizeUser = require('../utils/sanitizeUser');
 
 async function register(req, res) {
   try {
-    const { email, password, fullName, phone, dateOfBirth } = req.body;
+    const { email, password, fullName, phone, dateOfBirth, role } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
@@ -25,6 +25,7 @@ async function register(req, res) {
       data: {
         email,
         password: hashedPassword,
+        role: role === 'Teacher' ? 'TEACHER' : 'STUDENT',
         profile: {
           create: {
             fullName,
@@ -94,5 +95,39 @@ async function me(req, res) {
 module.exports = {
   register,
   login,
-  me
+  me,
+  adminLogin
 };
+
+async function adminLogin(req, res) {
+  try {
+    const { schoolName, password } = req.body;
+
+    const EXPECTED_NAME = 'St. Lawrence Next Gen Academy';
+    const EXPECTED_PASS = process.env.ADMIN_PASSWORD;
+
+    if (!EXPECTED_PASS) {
+      return res.status(500).json({ error: 'Admin credentials not configured on server.' });
+    }
+
+    if (
+      schoolName?.trim().toLowerCase() !== EXPECTED_NAME.toLowerCase() ||
+      password !== EXPECTED_PASS
+    ) {
+      return res.status(401).json({ error: 'Invalid school name or password.' });
+    }
+
+    // Generate a special admin-only token (no user record needed)
+    const jwt = require('jsonwebtoken');
+    const adminToken = jwt.sign(
+      { role: 'ADMIN', isStandaloneAdmin: true },
+      process.env.JWT_SECRET,
+      { expiresIn: '8h' }
+    );
+
+    res.json({ token: adminToken, role: 'ADMIN' });
+  } catch (error) {
+    console.error('Admin login error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}

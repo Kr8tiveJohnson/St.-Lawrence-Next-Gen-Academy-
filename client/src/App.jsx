@@ -8,10 +8,13 @@ import RegisterPage from "./pages/RegisterPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import NewsPage from "./pages/NewsPage.jsx";
 import AdminPage from "./pages/AdminPage.jsx";
+import AdminLoginPage from "./pages/AdminLoginPage.jsx";
 import HallOfFamePage from "./pages/HallOfFamePage.jsx";
 import ChatPage from "./pages/ChatPage.jsx";
 import NotFoundPage from "./pages/NotFoundPage.jsx";
-import ProtectedRoute from "./components/common/ProtectedRoute.jsx";
+import TermsPage from "./pages/TermsPage.jsx";
+import PrivacyPage from "./pages/PrivacyPage.jsx";
+import PrivacyNotice from "./components/common/PrivacyNotice.jsx";
 
 export default function App() {
   return (
@@ -25,11 +28,15 @@ export default function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/news" element={<NewsPage />} />
-          <Route path="/admin" element={<ProtectedRoute element={<AdminPage />} requiredRole="ADMIN" />} />
+          <Route path="/admin-login" element={<AdminLoginPage />} />
+          <Route path="/admin" element={<AdminPage />} />
           <Route path="/hall-of-fame" element={<HallOfFamePage />} />
           <Route path="/chat" element={<ChatPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+        <PrivacyNotice />
       </BrowserRouter>
     </AuthProvider>
   );

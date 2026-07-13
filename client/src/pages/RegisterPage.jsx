@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import logoImg from "../assets/St. Lawrence Next Gen Academy logo.png";
 
 const NIGERIAN_STATES = [
@@ -27,15 +28,29 @@ export default function RegisterPage() {
   });
 
   const navigate = useNavigate();
+  const { register } = useAuth();
+  const [error, setError] = useState("");
 
-  const handleNext = (e) => {
+  const handleNext = async (e) => {
     e.preventDefault();
-    if (step < 3) setStep(step + 1);
-    else {
-      // Simulate registration
-      localStorage.setItem("sl_token", "demo_token_123");
-      localStorage.setItem("sl_user", JSON.stringify(formData));
-      navigate("/profile");
+    setError("");
+    if (step < 3) {
+      setStep(step + 1);
+    } else {
+      try {
+        const payload = {
+          email: formData.email,
+          password: formData.password,
+          fullName: `${formData.firstName} ${formData.lastName}`.trim(),
+          phone: formData.phone,
+          dateOfBirth: formData.dateOfBirth,
+          role: formData.role
+        };
+        await register(payload);
+        navigate("/profile");
+      } catch (err) {
+        setError(err.response?.data?.error || "Registration failed. Please try again.");
+      }
     }
   };
 
@@ -213,6 +228,12 @@ export default function RegisterPage() {
                 : "What exams are you preparing for?"}
           </p>
 
+          {error && (
+            <div style={{ marginBottom: "20px", padding: "12px", background: "#fee2e2", color: "#dc2626", borderRadius: "8px", fontSize: "0.9rem" }}>
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleNext}>
             {step === 1 && (
               <div
@@ -279,6 +300,11 @@ export default function RegisterPage() {
                     </div>
                   </div>
                 ))}
+                {formData.role === "Teacher" && (
+                  <div style={{ padding: "12px", background: "rgba(212,168,83,0.1)", borderRadius: "8px", fontSize: "0.85rem", color: "var(--navy)", borderLeft: "4px solid var(--gold)" }}>
+                    <strong>Note:</strong> Teacher accounts require manual admin approval after registration before you can create classes and upload resources.
+                  </div>
+                )}
               </div>
             )}
 

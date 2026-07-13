@@ -1,4 +1,4 @@
-﻿const prisma = require('../config/database');
+const prisma = require('../config/database');
 const sanitizeUser = require('../utils/sanitizeUser');
 
 /**
@@ -125,10 +125,36 @@ async function updatePrivacySettings(req, res) {
   }
 }
 
+/**
+ * Update cookie consent for current user
+ */
+async function updateCookieConsent(req, res) {
+  try {
+    const { consent } = req.body;
+    const userId = req.user.id;
+
+    if (typeof consent !== 'boolean') {
+      return res.status(400).json({ error: 'Consent boolean is required' });
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { cookieConsent: consent },
+      include: { profile: true }
+    });
+
+    res.status(200).json({ cookieConsent: updatedUser.cookieConsent });
+  } catch (error) {
+    console.error('Update cookie consent error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   getMe,
   updateProfile,
   getUserById,
   uploadPhoto,
-  updatePrivacySettings
+  updatePrivacySettings,
+  updateCookieConsent
 };

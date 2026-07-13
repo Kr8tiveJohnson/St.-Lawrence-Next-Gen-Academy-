@@ -1,26 +1,32 @@
-﻿const prisma = require('../config/database');
+const prisma = require('../config/database');
 
 /**
  * Get system dashboard stats (admin only)
  */
 async function getDashboardStats(req, res) {
   try {
-    const [totalUsers, totalClassrooms, totalGroups, totalMessages] = await Promise.all([
+    const [totalUsers, activeTeachers, courses, newsArticles, hallOfFameEntries, messages] = await Promise.all([
       prisma.user.count(),
+      prisma.user.count({ where: { role: 'TEACHER' } }),
       prisma.course.count(),
-      prisma.group.count(),
+      prisma.news.count({ where: { tag: { not: 'hall-of-fame' } } }),
+      prisma.news.count({ where: { tag: 'hall-of-fame' } }),
       prisma.message.count()
     ]);
 
-    const stats = {
-      totalUsers,
-      totalClassrooms,
-      totalGroups,
-      totalMessages,
-      timestamp: new Date()
-    };
+    const premiumUsers = await prisma.user.count({ where: { tier: 'PAID' } });
 
-    res.status(200).json({ stats });
+    res.status(200).json({
+      totalUsers,
+      activeTeachers,
+      premiumUsers,
+      totalRevenue: null,
+      coursesPublished: courses,
+      newsArticles,
+      hallOfFameEntries,
+      totalMessages: messages,
+      timestamp: new Date()
+    });
   } catch (error) {
     console.error('Get dashboard stats error:', error);
     res.status(500).json({ error: 'Internal server error' });

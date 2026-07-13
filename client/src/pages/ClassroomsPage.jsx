@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import client from "../api/client";
 import { useAuth } from "../context/AuthContext";
+import logoImg from "../assets/St. Lawrence Next Gen Academy logo.png";
 
 export default function Classrooms() {
   const { isTeacher, user } = useAuth();
@@ -32,7 +33,7 @@ export default function Classrooms() {
       <nav className="nav internal-page-nav" style={{ padding: 0 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", maxWidth: "1100px", margin: "0 auto" }}>
           <a href="/" className="nav-logo" style={{ textDecoration: "none" }}>
-            <div style={{ fontSize: "1.8rem" }}>🎓</div>
+            <img src={logoImg} alt="St. Lawrence Next Gen Academy" className="nav-logo-img" />
             <div>
               <div className="nav-brand-name">ST. LAWRENCE</div>
               <div className="nav-brand-sub hide-on-mobile">NEXT GEN ACADEMY</div>
