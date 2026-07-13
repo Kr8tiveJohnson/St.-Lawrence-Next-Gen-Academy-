@@ -94,6 +94,82 @@ function FormInput({ label, value, onChange, type = "text", placeholder, require
   );
 }
 
+// ─── Image Uploader ──────────────────────────────────────────────────────────
+function ImageUploader({ label = "Image", value, onChange }) {
+  const [tab, setTab] = useState("upload"); // "upload" | "url"
+  const fileRef = useState(null);
+  const inputRef = fileRef[1];
+  const [inputEl, setInputEl] = useState(null);
+
+  const handleFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => onChange(evt.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const tabStyle = (active) => ({
+    flex: 1,
+    padding: "7px",
+    border: "none",
+    borderRadius: "8px",
+    fontWeight: 700,
+    fontSize: "0.78rem",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    background: active ? "#0f2144" : "transparent",
+    color: active ? "#fff" : "#64748b",
+    transition: "all 0.15s",
+  });
+
+  return (
+    <div style={{ marginBottom: "16px" }}>
+      <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#64748b", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>{label}</label>
+      <div style={{ display: "flex", gap: "4px", background: "#f1f5f9", padding: "4px", borderRadius: "10px", marginBottom: "10px" }}>
+        <button type="button" style={tabStyle(tab === "upload")} onClick={() => setTab("upload")}>📁 Upload from Device</button>
+        <button type="button" style={tabStyle(tab === "url")} onClick={() => setTab("url")}>🔗 Image URL</button>
+      </div>
+      {tab === "upload" ? (
+        <div
+          onClick={() => inputEl?.click()}
+          style={{ border: "2px dashed #c7d4e0", borderRadius: "12px", padding: "20px", textAlign: "center", cursor: "pointer", background: "#f8fafc", transition: "border-color 0.2s" }}
+          onMouseEnter={e => e.currentTarget.style.borderColor = "#0f2144"}
+          onMouseLeave={e => e.currentTarget.style.borderColor = "#c7d4e0"}
+        >
+          {value && (value.startsWith("data:") || value.startsWith("http")) ? (
+            <img src={value} alt="preview" style={{ maxHeight: 120, maxWidth: "100%", borderRadius: "8px", objectFit: "cover" }} />
+          ) : (
+            <>
+              <div style={{ fontSize: "2rem", marginBottom: "6px" }}>🖼️</div>
+              <div style={{ fontSize: "0.82rem", color: "#64748b" }}>Click to select an image from your device</div>
+              <div style={{ fontSize: "0.72rem", color: "#9ca3af", marginTop: "3px" }}>JPG, PNG, GIF, WebP — max 5MB</div>
+            </>
+          )}
+          <input
+            ref={el => setInputEl(el)}
+            type="file"
+            accept="image/*"
+            style={{ display: "none" }}
+            onChange={handleFile}
+          />
+        </div>
+      ) : (
+        <input
+          type="url"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder="https://images.unsplash.com/photo-..."
+          style={{ width: "100%", padding: "11px 14px", border: "1px solid #e2e8f0", borderRadius: "10px", fontSize: "0.9rem", fontFamily: "inherit", outline: "none", boxSizing: "border-box", color: "#0f2144" }}
+        />
+      )}
+      {value && (
+        <button type="button" onClick={() => onChange("")} style={{ marginTop: "6px", background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: "6px", padding: "4px 10px", fontSize: "0.75rem", cursor: "pointer", fontWeight: 600 }}>✕ Remove Image</button>
+      )}
+    </div>
+  );
+}
+
 function SubmitBtn({ loading, label }) {
   return (
     <button type="submit" disabled={loading} style={{ width: "100%", padding: "13px", background: loading ? "#9ca3af" : "#0f2144", color: "#fff", border: "none", borderRadius: "12px", fontWeight: 700, fontSize: "0.95rem", cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
@@ -330,7 +406,7 @@ function NewsTab() {
                 {["general", "exam", "update", "event"].map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
-            <FormInput label="Image URL (e.g. Unsplash or external link)" value={form.imageUrl} onChange={e => setForm({ ...form, imageUrl: e.target.value })} placeholder="https://images.unsplash.com/photo-..." />
+            <ImageUploader label="Article Image" value={form.imageUrl} onChange={val => setForm({ ...form, imageUrl: val })} />
             <FormInput label="Summary" value={form.summary} onChange={e => setForm({ ...form, summary: e.target.value })} placeholder="Short summary" required />
             <FormInput as="textarea" label="Full Details" value={form.details} onChange={e => setForm({ ...form, details: e.target.value })} placeholder="Full article content..." required />
             <SubmitBtn loading={saving} label={editItem ? "Save Changes" : "Publish Article"} />
@@ -427,7 +503,7 @@ function FameTab() {
         <Modal title={editItem ? "Edit Hall of Fame Entry" : "Add Hall of Fame Entry"} onClose={() => setModal(false)}>
           <form onSubmit={submit}>
             <FormInput label="Name / Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. John Doe — WAEC Top Score 2025" required />
-            <FormInput label="Image URL" value={form.imageUrl} onChange={e => setForm({ ...form, imageUrl: e.target.value })} placeholder="https://images.unsplash.com/photo-..." />
+            <ImageUploader label="Student / Award Photo" value={form.imageUrl} onChange={val => setForm({ ...form, imageUrl: val })} />
             <FormInput label="Achievement Summary" value={form.summary} onChange={e => setForm({ ...form, summary: e.target.value })} placeholder="Brief description of the achievement" required />
             <FormInput as="textarea" label="Full Story" value={form.details} onChange={e => setForm({ ...form, details: e.target.value })} placeholder="Full details about this achievement..." />
             <SubmitBtn loading={saving} label={editItem ? "Save Changes" : "Add to Hall of Fame"} />
@@ -564,7 +640,7 @@ function CoursesTab() {
             <FormInput label="Course Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. WAEC Mathematics 2026" required />
             <FormInput label="Category" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} placeholder="e.g. WAEC, JAMB, Digital Skills" required />
             <FormInput label="Subject" value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} placeholder="e.g. Mathematics, English" required />
-            <FormInput label="Course Image URL" value={form.imageUrl} onChange={e => setForm({ ...form, imageUrl: e.target.value })} placeholder="https://images.unsplash.com/photo-..." />
+            <ImageUploader label="Course Cover Image" value={form.imageUrl} onChange={val => setForm({ ...form, imageUrl: val })} />
             <FormInput as="textarea" label="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Detailed course description..." />
             <div style={{ marginBottom: "20px" }}>
               <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "#64748b", marginBottom: "6px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Access Type</label>
