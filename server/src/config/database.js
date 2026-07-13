@@ -1,1 +1,8 @@
-﻿// database.js — PostgreSQL connection (Prisma / Sequelize / pg pool); reads DATABASE_URL from .env
+const { PrismaClient } = require('@prisma/client');
+const { PrismaPg } = require('@prisma/adapter-pg');
+
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
+
+module.exports = prisma;
+

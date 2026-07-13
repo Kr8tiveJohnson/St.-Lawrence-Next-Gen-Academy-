@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+  MAIN_ADMIN
+}
+
+enum Tier {
+  PUBLIC
+  UNPAID
+  PAID
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(STUDENT)
+  tier      Tier     @default(UNPAID)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile             Profile?
+  permissionOverrides PermissionOverride[]
+  enrollments         Enrollment[]
+  bookmarks           Bookmark[]
+  
+  // Relations for messaging and friends
+  messagesSent     Message[] @relation("Sender")
+  messagesReceived Message[] @relation("Receiver")
+  friendRequestsSent   Friendship[] @relation("Requester")
+  friendRequestsReceived Friendship[] @relation("Receiver")
+}
+
+model Profile {
+  id          String   @id @default(uuid())
+  fullName    String?
+  phone       String?
+  dateOfBirth DateTime?
+  avatarUrl   String?
+  
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PermissionOverride {
+  id     String @id @default(uuid())
+  key    String
+  value  Boolean @default(true)
+  
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+}
+
+model Group {
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime     @default(now())
+  enrollments Enrollment[]
+}
+
+model Enrollment {
+  id      String @id @default(uuid())
+  userId  String
+  groupId String
+  
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+}
+
+model Course {
+  id       String   @id @default(uuid())
+  title    String
+  category String
+  subject  String
+  isPaid   Boolean  @default(true)
+  lessons  Lesson[]
+}
+
+model Lesson {
+  id         String @id @default(uuid())
+  title      String
+  playbackId String?
+  courseId   String
+  course     Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+}
+
+model PastQuestion {
+  id           String     @id @default(uuid())
+  examType     String
+  subject      String
+  year         Int
+  questionText String
+  options      Json
+  correctOption String
+  isPaid       Boolean    @default(true)
+  bookmarks    Bookmark[]
+}
+
+model Bookmark {
+  id             String       @id @default(uuid())
+  userId         String
+  pastQuestionId String
+  
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pastQuestion PastQuestion @relation(fields: [pastQuestionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, pastQuestionId])
+}
+
+model News {
+  id        String   @id @default(uuid())
+  title     String
+  tag       String
+  date      DateTime @default(now())
+  summary   String
+  details   String
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  content    String
+  type       String   @default("DIRECT") // e.g. DIRECT, TEACHER_STUDENT
+  createdAt  DateTime @default(now())
+
+  senderId   String
+  receiverId String
+  sender     User @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+}
+
+model Friendship {
+  id          String   @id @default(uuid())
+  status      String   @default("PENDING") // PENDING, ACCEPTED, BLOCKED
+  createdAt   DateTime @default(now())
+
+  requesterId String
+  receiverId  String
+  requester   User @relation("Requester", fields: [requesterId], references: [id], onDelete: Cascade)
+  receiver    User @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, receiverId])
+}
+
+model AdSetting {
+  id       String  @id @default(uuid())
+  slot     String  @unique
+  clientId String
+  isActive Boolean @default(true)
+  price    Float?
+}

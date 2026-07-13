@@ -472,40 +472,80 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* ── MY COURSES / SETTINGS TABS ── */}
-            {(activeTab === "My Courses" || activeTab === "Settings") && (
-              <div
-                className="dash-card dashboard-empty-card"
-                style={{
-                  textAlign: "center",
-                  padding: "80px 24px",
-                  background: "var(--white)",
-                  borderRadius: "28px",
-                  border: "1px solid var(--border)",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "3rem",
-                    display: "block",
-                    marginBottom: "16px",
-                  }}
-                >
-                  🚧
-                </span>
-                <h3
-                  style={{
-                    fontFamily: "var(--font-h)",
-                    fontSize: "1.4rem",
-                    color: "var(--navy)",
-                    marginBottom: "8px",
-                  }}
-                >
-                  Under Construction
+            {/* ── MY COURSES TAB ── */}
+            {activeTab === "My Courses" && (
+              <div>
+                <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.25rem", fontWeight: 800, color: "var(--navy)", marginBottom: "20px" }}>
+                  Enrolled Courses
                 </h3>
-                <p style={{ color: "var(--text-3)" }}>
-                  This section is currently being built.
-                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {/* Course Card 1 */}
+                  <div className="dash-card profile-course-row" style={{ display: "flex", gap: "20px", alignItems: "center", flexWrap: "wrap" }}>
+                    <div style={{ width: "80px", height: "80px", borderRadius: "16px", background: "rgba(59,130,246,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2.4rem" }}>
+                      💻
+                    </div>
+                    <div style={{ flex: 1, minWidth: "200px" }}>
+                      <span className="profile-badge blue" style={{ marginBottom: "8px", display: "inline-block" }}>Tech &amp; Design</span>
+                      <h4 style={{ fontFamily: "var(--font-h)", fontSize: "1.15rem", fontWeight: 800, color: "var(--navy)", margin: "0 0 12px 0" }}>
+                        Full-Stack Web Development
+                      </h4>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <div className="progress-bar-track" style={{ flex: 1 }}><div className="progress-bar-fill" style={{ width: "45%" }} /></div>
+                        <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-2)" }}>45%</span>
+                      </div>
+                    </div>
+                    <button className="btn-primary" style={{ whiteSpace: "nowrap" }}>Resume Lesson</button>
+                  </div>
+
+                  <div className="dash-card profile-course-row" style={{ display: "flex", gap: "20px", alignItems: "center", flexWrap: "wrap" }}>
+                    <div style={{ width: "80px", height: "80px", borderRadius: "16px", background: "rgba(34,197,94,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2.4rem" }}>
+                      📈
+                    </div>
+                    <div style={{ flex: 1, minWidth: "200px" }}>
+                      <span className="profile-badge green" style={{ marginBottom: "8px", display: "inline-block" }}>Data Analysis</span>
+                      <h4 style={{ fontFamily: "var(--font-h)", fontSize: "1.15rem", fontWeight: 800, color: "var(--navy)", margin: "0 0 12px 0" }}>
+                        Data Analysis Basics using Excel
+                      </h4>
+                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <div className="progress-bar-track" style={{ flex: 1 }}><div className="progress-bar-fill" style={{ width: "12%" }} /></div>
+                        <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--text-2)" }}>12%</span>
+                      </div>
+                    </div>
+                    <button className="btn-primary" style={{ whiteSpace: "nowrap" }}>Resume Lesson</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── SETTINGS TAB ── */}
+            {activeTab === "Settings" && (
+              <div>
+                <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.25rem", fontWeight: 800, color: "var(--navy)", marginBottom: "20px" }}>
+                  Account Settings
+                </h3>
+                <div className="dash-card" style={{ maxWidth: "600px" }}>
+                  <form onSubmit={(e) => { e.preventDefault(); alert("Profile updated successfully!"); }}>
+                    <div style={{ marginBottom: "20px" }}>
+                      <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "var(--text-3)", marginBottom: "8px" }}>First Name</label>
+                      <input type="text" defaultValue={user.firstName} style={{ width: "100%", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border)", fontSize: "1rem" }} />
+                    </div>
+                    <div style={{ marginBottom: "20px" }}>
+                      <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "var(--text-3)", marginBottom: "8px" }}>Last Name</label>
+                      <input type="text" defaultValue={user.lastName} style={{ width: "100%", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border)", fontSize: "1rem" }} />
+                    </div>
+                    <div style={{ marginBottom: "20px" }}>
+                      <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "var(--text-3)", marginBottom: "8px" }}>Phone Number</label>
+                      <input type="tel" placeholder="+234..." style={{ width: "100%", padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--border)", fontSize: "1rem" }} />
+                    </div>
+                    <div style={{ marginBottom: "30px" }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "0.95rem", color: "var(--text)", cursor: "pointer" }}>
+                        <input type="checkbox" defaultChecked />
+                        Opt-in to promotional emails and newsletters
+                      </label>
+                    </div>
+                    <button type="submit" className="btn-primary">Save Changes</button>
+                  </form>
+                </div>
               </div>
             )}
           </div>

@@ -1,1 +1,24 @@
-﻿// user.routes — GET/PUT /users/me, GET /users/:id (paid only, privacy stripped), POST /users/me/photo, PUT /users/me/privacy
+﻿const express = require('express');
+const router = express.Router();
+const authMiddleware = require('../middleware/auth.middleware');
+const userController = require('../controllers/user.controller');
+
+// All user routes require authentication
+router.use(authMiddleware);
+
+// Get current user profile
+router.get('/me', userController.getMe);
+
+// Update current user profile
+router.put('/me', userController.updateProfile);
+
+// Upload user photo
+router.post('/me/photo', userController.uploadPhoto);
+
+// Update privacy settings
+router.put('/me/privacy', userController.updatePrivacySettings);
+
+// Get user by ID (with privacy controls)
+router.get('/:id', userController.getUserById);
+
+module.exports = router;

@@ -545,6 +545,12 @@ export default function HomePage() {
                 </article>
               ))}
             </div>
+
+            <div style={{ marginTop: "32px" }}>
+              <Link to="/news" className="btn btn-secondary">
+                Learn More
+              </Link>
+            </div>
           </div>
 
           <aside className="news-preview-sidebar reveal reveal-delay-2">
@@ -561,7 +567,7 @@ export default function HomePage() {
                       <strong>{exam.name}</strong>
                       <span>{exam.date}</span>
                     </div>
-                    <b>{exam.countdown}</b>Nigeria’s Premier Learning Platform
+                    <b>{exam.countdown}</b>
                   </div>
                 ))}
               </div>

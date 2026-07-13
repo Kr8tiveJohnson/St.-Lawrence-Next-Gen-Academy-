@@ -2,6 +2,14 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logoImg from "../assets/St. Lawrence Next Gen Academy logo.png";
 
+const NIGERIAN_STATES = [
+  "Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno",
+  "Cross River","Delta","Ebonyi","Edo","Ekiti","Enugu","FCT - Abuja","Gombe",
+  "Imo","Jigawa","Kaduna","Kano","Katsina","Kebbi","Kogi","Kwara","Lagos",
+  "Nasarawa","Niger","Ogun","Ondo","Osun","Oyo","Plateau","Rivers","Sokoto",
+  "Taraba","Yobe","Zamfara",
+];
+
 export default function RegisterPage() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -10,6 +18,11 @@ export default function RegisterPage() {
     lastName: "",
     email: "",
     password: "",
+    dateOfBirth: "",
+    gender: "",
+    country: "Nigeria",
+    state: "",
+    phone: "",
     examBody: "JAMB",
   });
 
@@ -210,7 +223,7 @@ export default function RegisterPage() {
                   gap: "16px",
                 }}
               >
-                {["Student", "Teacher", "Administrator"].map((r) => (
+                {["Student", "Teacher"].map((r) => (
                   <div
                     key={r}
                     className="register-role-card"
@@ -410,6 +423,98 @@ export default function RegisterPage() {
                     placeholder="••••••••"
                   />
                 </div>
+
+                {/* Date of Birth */}
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--text-3)", marginBottom: "8px", textTransform: "uppercase" }}>
+                    Date of Birth *
+                  </label>
+                  <input
+                    required
+                    type="date"
+                    value={formData.dateOfBirth}
+                    onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                    style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid var(--border)", outline: "none", fontSize: "1rem", fontFamily: "var(--font-b)", background: "var(--white)", color: formData.dateOfBirth ? "var(--navy)" : "var(--text-3)" }}
+                  />
+                </div>
+
+                {/* Gender */}
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--text-3)", marginBottom: "8px", textTransform: "uppercase" }}>
+                    Gender *
+                  </label>
+                  <select
+                    required
+                    value={formData.gender}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                    style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid var(--border)", outline: "none", fontSize: "1rem", fontFamily: "var(--font-b)", background: "var(--white)", color: formData.gender ? "var(--navy)" : "var(--text-3)" }}
+                  >
+                    <option value="" disabled>Select gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Prefer not to say">Prefer not to say</option>
+                  </select>
+                </div>
+
+                {/* Country & State */}
+                <div style={{ display: "flex", gap: "16px" }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--text-3)", marginBottom: "8px", textTransform: "uppercase" }}>
+                      Country *
+                    </label>
+                    <select
+                      required
+                      value={formData.country}
+                      onChange={(e) => setFormData({ ...formData, country: e.target.value, state: "" })}
+                      style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid var(--border)", outline: "none", fontSize: "1rem", fontFamily: "var(--font-b)", background: "var(--white)" }}
+                    >
+                      <option value="Nigeria">Nigeria</option>
+                      <option value="Ghana">Ghana</option>
+                      <option value="Kenya">Kenya</option>
+                      <option value="South Africa">South Africa</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--text-3)", marginBottom: "8px", textTransform: "uppercase" }}>
+                      State *
+                    </label>
+                    <select
+                      required
+                      value={formData.state}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                      style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid var(--border)", outline: "none", fontSize: "1rem", fontFamily: "var(--font-b)", background: "var(--white)", color: formData.state ? "var(--navy)" : "var(--text-3)" }}
+                    >
+                      <option value="" disabled>Select state</option>
+                      {NIGERIAN_STATES.map((s) => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Phone Number */}
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--text-3)", marginBottom: "8px", textTransform: "uppercase" }}>
+                    Phone Number *
+                  </label>
+                  <input
+                    required
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "1px solid var(--border)", outline: "none", fontSize: "1rem", fontFamily: "var(--font-b)" }}
+                    placeholder="+234 800 000 0000"
+                  />
+                </div>
+
+                {/* Privacy Notice */}
+                <div style={{ display: "flex", gap: "10px", alignItems: "flex-start", background: "rgba(15,32,64,0.05)", padding: "14px", borderRadius: "12px", border: "1px solid var(--border)" }}>
+                  <span style={{ fontSize: "1rem", flexShrink: 0 }}>🔒</span>
+                  <p style={{ fontSize: "0.8rem", color: "var(--text-2)", margin: 0, lineHeight: 1.6 }}>
+                    Your personal details (full name, date of birth, phone) are <strong>private</strong> and only visible to administrators.
+                  </p>
+                </div>
               </div>
             )}
 
@@ -526,6 +631,27 @@ export default function RegisterPage() {
                 }}
               >
                 Log In
+              </Link>
+            </div>
+
+            <div style={{ textAlign: "center", marginTop: "12px" }}>
+              <Link
+                to="/"
+                style={{
+                  color: "var(--text-3)",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  opacity: 0.7,
+                  transition: "opacity 0.2s",
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = 0.7}
+              >
+                ← Back to Home
               </Link>
             </div>
           </form>

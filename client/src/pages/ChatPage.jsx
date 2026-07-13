@@ -1,453 +1,166 @@
-﻿import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import client from "../api/client";
+import { getSocket } from "../api/socket";
 
-const CHAT_ROOMS = [
-  {
-    name: "Virtual Assistant Mentorship Hub",
-    category: "Premium Room",
-    members: 128,
-    activity: "Mentor live in 8 mins",
-    accent: "rgba(212,168,83,0.16)",
-    icon: "🎗️",
-    desc: "Weekly support room for VA students working through client onboarding, SOPs, and productivity workflows.",
-  },
-  {
-    name: "JAMB Intensive Revision Room",
-    category: "Exam Circle",
-    members: 214,
-    activity: "42 active now",
-    accent: "rgba(59,130,246,0.14)",
-    icon: "📝",
-    desc: "Peer-powered revision chat for timed drills, rapid-fire questions, and explanation sharing before mock tests.",
-  },
-  {
-    name: "Frontend Build Review",
-    category: "Tech Lab",
-    members: 76,
-    activity: "Projects under review",
-    accent: "rgba(34,197,94,0.14)",
-    icon: "💻",
-    desc: "Students post portfolio builds, receive instructor review, and discuss UI, React, deployment, and debugging.",
-  },
-  {
-    name: "Career & Remote Jobs Lounge",
-    category: "Career Room",
-    members: 93,
-    activity: "3 new job leads",
-    accent: "rgba(168,85,247,0.14)",
-    icon: "🚀",
-    desc: "A premium networking room for remote role leads, CV feedback, LinkedIn polishing, and interview prep.",
-  },
-];
-
-const CHAT_FEED = [
-  {
-    name: "Sarah J.",
-    time: "2 mins ago",
-    text: "I just uploaded a new checklist for client onboarding. Please review before tonight's session.",
-  },
-  {
-    name: "Chinedu N.",
-    time: "8 mins ago",
-    text: "Can someone explain the shortcut for simultaneous equations in yesterday's JAMB revision room?",
-  },
-  {
-    name: "Elena R.",
-    time: "14 mins ago",
-    text: "Frontend lab starts by 7 PM. Share your landing page links before the critique round.",
-  },
-];
-
-export default function ChatPage() {
-  const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+export default function Chat() {
+  const [friends, setFriends] = useState([]);
+  const [active, setActive] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [draft, setDraft] = useState("");
+  const socketRef = useRef(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("sl_token");
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-    setUser(
-      JSON.parse(localStorage.getItem("sl_user")) || { firstName: "Student" },
-    );
-  }, [navigate]);
+    client.get("/friends").then(({ data }) => setFriends(data.friends));
 
-  if (!user) {
-    return (
-      <div style={{ minHeight: "100vh", background: "var(--off-white)" }} />
-    );
+    const socket = getSocket();
+    socket.connect();
+    socketRef.current = socket;
+
+    socket.on("chat:message", (msg) => {
+      setMessages((prev) => (active && (msg.fromId === active.id || msg.toId === active.id) ? [...prev, msg] : prev));
+    });
+
+    return () => socket.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function openChat(friend) {
+    setActive(friend);
+    const { data } = await client.get(`/chat/with/${friend.username}`);
+    setMessages(data.messages);
+  }
+
+  function send() {
+    if (!draft.trim() || !active) return;
+    socketRef.current.emit("chat:direct", { toUsername: active.username, content: draft }, (res) => {
+      if (res?.error) return alert(res.error);
+      setMessages((prev) => [...prev, res.message]);
+      setDraft("");
+    });
+  }
+
+  async function block() {
+    if (!active) return;
+    await client.post("/chat/block", { username: active.username });
+    setActive(null);
+  }
+
+  async function report() {
+    if (!active) return;
+    const reason = prompt("Reason for report?");
+    if (reason) await client.post("/chat/report", { username: active.username, reason });
   }
 
   return (
-    <div
-      className="page-wrapper"
-      style={{ background: "var(--off-white)", minHeight: "100vh" }}
-    >
-      <nav
-        className="nav internal-page-nav"
-        style={{
-          position: "sticky",
-          top: 0,
-          borderRadius: 0,
-          borderBottom: "1px solid var(--border)",
-          zIndex: 100,
-        }}
-      >
-        <Link
-          to="/"
-          style={{
-            textDecoration: "none",
-            color: "var(--navy)",
-            fontWeight: 900,
-            fontSize: "1.2rem",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
-          <div
-            style={{
-              background: "var(--navy)",
-              color: "var(--gold)",
-              width: "32px",
-              height: "32px",
-              borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "0.8rem",
-            }}
-          >
-            SL
+    <div className="product-homepage" style={{ minHeight: "100vh", background: "var(--off-white)", display: "flex", flexDirection: "column" }}>
+      {/* ── TOP NAV ───────────────────────────────────── */}
+      <nav className="nav" style={{ position: "sticky", top: 0, background: "rgba(255, 255, 255, 0.9)", backdropFilter: "blur(12px)", borderRadius: 0, borderBottom: "1px solid var(--border)", zIndex: 100 }}>
+        <a href="/" className="nav-logo" style={{ textDecoration: "none" }}>
+          <div style={{ fontSize: "1.8rem" }}>🎓</div>
+          <div>
+            <div className="nav-brand-name">ST. LAWRENCE</div>
+            <div className="nav-brand-sub">NEXT GEN ACADEMY</div>
           </div>
-          ST. LAWRENCE
-        </Link>
-        <div className="internal-page-actions">
-          <Link
-            to="/groups"
-            className="btn-ghost"
-            style={{ padding: "8px 16px", fontSize: "0.8rem" }}
-          >
-            Study Groups
-          </Link>
-          <Link
-            to="/profile"
-            className="btn-primary"
-            style={{
-              padding: "8px 16px",
-              fontSize: "0.8rem",
-              boxShadow: "none",
-            }}
-          >
-            Dashboard
-          </Link>
+        </a>
+        <div className="internal-page-actions" style={{ display: "flex", gap: "16px", alignItems: "center" }}>
+          <a href="/profile" className="btn-ghost" style={{ padding: "8px 16px", fontSize: "0.8rem", textDecoration: "none" }}>Back to Profile</a>
         </div>
       </nav>
 
-      <div
-        className="wrap community-wrap"
-        style={{ paddingTop: "56px", paddingBottom: "88px" }}
-      >
-        <div
-          className="internal-page-header"
-          style={{ textAlign: "center", marginBottom: "40px" }}
-        >
-          <div className="hero-chip" style={{ marginBottom: "18px" }}>
-            <span className="chip-dot" /> Live Collaboration Rooms
+      <main className="wrap chat-page-main" style={{ flex: 1, padding: "40px 0", maxWidth: "1200px", width: "100%", display: "flex", gap: "24px" }}>
+        {/* SIDEBAR: Friends List */}
+        <div className="card chat-sidebar" style={{ width: 280, display: "flex", flexDirection: "column", padding: "20px", background: "var(--white)", borderRadius: "20px", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.02)" }}>
+          <h3 style={{ fontSize: "1.2rem", color: "var(--navy)", marginBottom: "20px", paddingBottom: "12px", borderBottom: "1px solid var(--border)" }}>Messages</h3>
+          <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "4px" }}>
+            {friends.map((f) => {
+              const isActive = active?.username === f.username;
+              return (
+                <div key={f.username} onClick={() => openChat(f)} style={{ padding: "12px", cursor: "pointer", borderRadius: "12px", background: isActive ? "rgba(10,22,40,0.04)" : "transparent", display: "flex", alignItems: "center", gap: "12px", transition: "var(--trans)" }}>
+                  <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--navy)", color: "var(--gold)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "1.1rem" }}>
+                    {f.username.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: isActive ? 800 : 600, color: "var(--navy)", fontSize: "0.95rem" }}>{f.username}</div>
+                    <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Tap to chat</div>
+                  </div>
+                </div>
+              );
+            })}
+            {friends.length === 0 && <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", textAlign: "center", marginTop: "20px" }}>No friends added yet.</p>}
           </div>
-          <h1
-            className="hero-h1"
-            style={{
-              fontSize: "clamp(2.3rem, 5vw, 3.6rem)",
-              marginInline: "auto",
-              marginBottom: "14px",
-            }}
-          >
-            Chat Hub for Enrolled Students
-          </h1>
-          <p className="hero-desc" style={{ marginInline: "auto" }}>
-            Jump into peer-to-peer rooms, instructor office hours, and focused
-            revision spaces built to keep your learning momentum high.
-          </p>
         </div>
 
-        <div
-          className="community-layout"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.2fr 0.8fr",
-            gap: "24px",
-            alignItems: "start",
-          }}
-        >
-          <div style={{ display: "grid", gap: "18px" }}>
-            {CHAT_ROOMS.map((room) => (
-              <div
-                key={room.name}
-                className="community-card"
-                style={{
-                  background: "var(--white)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "28px",
-                  padding: "24px",
-                  boxShadow: "0 12px 30px rgba(10,22,40,0.03)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    gap: "16px",
-                    marginBottom: "14px",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "14px",
-                      minWidth: 0,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "56px",
-                        height: "56px",
+        {/* MAIN CHAT WINDOW */}
+        <div className="card chat-window" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 600, background: "var(--white)", borderRadius: "20px", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.02)", overflow: "hidden", padding: 0 }}>
+          {active ? (
+            <>
+              {/* Chat Header */}
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", padding: "20px 24px", background: "rgba(255,255,255,0.8)", backdropFilter: "blur(10px)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--navy)", color: "var(--gold)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, fontSize: "1.2rem" }}>
+                    {active.username.charAt(0).toUpperCase()}
+                  </div>
+                  <strong style={{ fontSize: "1.2rem", color: "var(--navy)" }}>{active.username}</strong>
+                </div>
+                <div style={{ display: "flex", gap: 12 }}>
+                  <button className="btn-ghost" onClick={report} style={{ padding: "6px 12px", fontSize: "0.8rem", color: "var(--text-muted)" }}>Report</button>
+                  <button className="btn-ghost" onClick={block} style={{ padding: "6px 12px", fontSize: "0.8rem", color: "#dc2626" }}>Block</button>
+                </div>
+              </div>
+              
+              {/* Chat Messages */}
+              <div style={{ flex: 1, overflowY: "auto", padding: "24px", display: "flex", flexDirection: "column", gap: "16px", background: "var(--off-white)" }}>
+                {messages.map((m, i) => {
+                  const isMine = m.fromId !== active.id; // basic check, assuming if it's not from active, it's mine
+                  return (
+                    <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: isMine ? "flex-end" : "flex-start" }}>
+                      <div style={{
+                        maxWidth: "75%",
+                        padding: "12px 16px",
                         borderRadius: "18px",
-                        background: room.accent,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "1.6rem",
-                        flexShrink: 0,
-                      }}
-                    >
-                      {room.icon}
-                    </div>
-                    <div style={{ minWidth: 0 }}>
-                      <div
-                        style={{
-                          fontSize: "0.76rem",
-                          fontWeight: 800,
-                          letterSpacing: "0.08em",
-                          color: "var(--text-3)",
-                          textTransform: "uppercase",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        {room.category}
+                        background: isMine ? "var(--navy)" : "var(--white)",
+                        color: isMine ? "var(--white)" : "var(--navy)",
+                        border: isMine ? "none" : "1px solid var(--border)",
+                        boxShadow: isMine ? "0 4px 12px rgba(10,22,40,0.1)" : "0 2px 8px rgba(0,0,0,0.02)",
+                        fontSize: "0.95rem",
+                        lineHeight: 1.5,
+                        borderBottomRightRadius: isMine ? "4px" : "18px",
+                        borderBottomLeftRadius: !isMine ? "4px" : "18px"
+                      }}>
+                        {m.content}
                       </div>
-                      <h3
-                        style={{
-                          fontSize: "1.2rem",
-                          fontWeight: 800,
-                          color: "var(--navy)",
-                          lineHeight: 1.25,
-                        }}
-                      >
-                        {room.name}
-                      </h3>
+                      <span style={{ color: "var(--text-muted)", fontSize: "0.7rem", marginTop: "6px", marginInline: "4px" }}>
+                        {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
-                  </div>
-                  <div
-                    style={{
-                      background: "var(--off-white)",
-                      borderRadius: "var(--r-full)",
-                      padding: "6px 12px",
-                      fontSize: "0.78rem",
-                      fontWeight: 800,
-                      color: "var(--text-2)",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {room.members} members
-                  </div>
-                </div>
-                <p
-                  style={{
-                    color: "var(--text-2)",
-                    lineHeight: 1.65,
-                    marginBottom: "18px",
-                  }}
-                >
-                  {room.desc}
-                </p>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: "12px",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <span
-                    style={{
-                      color: "var(--green)",
-                      fontWeight: 700,
-                      fontSize: "0.9rem",
-                    }}
-                  >
-                    {room.activity}
-                  </span>
-                  <button
-                    className="btn-primary"
-                    style={{ padding: "11px 18px" }}
-                  >
-                    Enter Room
-                  </button>
-                </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
 
-          <div style={{ display: "grid", gap: "18px" }}>
-            <div
-              className="community-card"
-              style={{
-                background: "linear-gradient(145deg, #0f2040, #132d55)",
-                color: "var(--white)",
-                borderRadius: "28px",
-                padding: "24px",
-                overflow: "hidden",
-                position: "relative",
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  top: "-60px",
-                  right: "-30px",
-                  width: "180px",
-                  height: "180px",
-                  borderRadius: "50%",
-                  background:
-                    "radial-gradient(circle, rgba(212,168,83,0.18), transparent 70%)",
-                }}
-              />
-              <div style={{ position: "relative", zIndex: 1 }}>
-                <div
-                  style={{
-                    color: "var(--gold)",
-                    fontSize: "0.76rem",
-                    fontWeight: 800,
-                    letterSpacing: "0.09em",
-                    textTransform: "uppercase",
-                    marginBottom: "8px",
-                  }}
-                >
-                  Access Status
-                </div>
-                <h3
-                  style={{
-                    fontSize: "1.35rem",
-                    fontWeight: 900,
-                    marginBottom: "10px",
-                  }}
-                >
-                  Premium Chat Unlocked
-                </h3>
-                <p
-                  style={{
-                    color: "rgba(255,255,255,0.72)",
-                    lineHeight: 1.65,
-                    marginBottom: "18px",
-                  }}
-                >
-                  {user.firstName}, your enrolled account can join mentor rooms,
-                  revision circles, and focused cohort support sessions.
-                </p>
-                <div style={{ display: "grid", gap: "10px" }}>
-                  {[
-                    "Mentor office hours every weekday",
-                    "Room-based moderation and study etiquette",
-                    "Priority access for premium cohorts",
-                  ].map((item) => (
-                    <div
-                      key={item}
-                      style={{
-                        display: "flex",
-                        gap: "10px",
-                        alignItems: "flex-start",
-                      }}
-                    >
-                      <span style={{ color: "var(--gold)", fontWeight: 900 }}>
-                        •
-                      </span>
-                      <span style={{ color: "rgba(255,255,255,0.82)" }}>
-                        {item}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+              {/* Chat Input */}
+              <div style={{ display: "flex", gap: 12, padding: "20px 24px", borderTop: "1px solid var(--border)", background: "var(--white)", alignItems: "center" }}>
+                <input 
+                  value={draft} 
+                  onChange={(e) => setDraft(e.target.value)} 
+                  onKeyDown={(e) => e.key === "Enter" && send()} 
+                  placeholder="Type a message…" 
+                  style={{ flex: 1, padding: "14px 20px", borderRadius: "100px", border: "1px solid var(--border)", background: "var(--off-white)", outline: "none", fontSize: "0.95rem" }}
+                />
+                <button onClick={send} style={{ width: 46, height: 46, borderRadius: "50%", background: "var(--navy)", color: "var(--gold)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "var(--trans)" }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
               </div>
+            </>
+          ) : (
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>
+              <div style={{ fontSize: "4rem", marginBottom: "16px", opacity: 0.5 }}>💬</div>
+              <h3 style={{ color: "var(--navy)", fontSize: "1.2rem", marginBottom: "8px" }}>Select a conversation</h3>
+              <p>Choose a friend from the sidebar to start chatting.</p>
             </div>
-
-            <div
-              className="community-card"
-              style={{
-                background: "var(--white)",
-                border: "1px solid var(--border)",
-                borderRadius: "28px",
-                padding: "24px",
-              }}
-            >
-              <h3
-                style={{
-                  fontSize: "1.15rem",
-                  fontWeight: 800,
-                  color: "var(--navy)",
-                  marginBottom: "16px",
-                }}
-              >
-                Recent Room Activity
-              </h3>
-              <div style={{ display: "grid", gap: "14px" }}>
-                {CHAT_FEED.map((item) => (
-                  <div
-                    key={item.name + item.time}
-                    style={{
-                      paddingBottom: "14px",
-                      borderBottom: "1px solid var(--border)",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: "12px",
-                        marginBottom: "6px",
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <span style={{ fontWeight: 800, color: "var(--navy)" }}>
-                        {item.name}
-                      </span>
-                      <span
-                        style={{ color: "var(--text-3)", fontSize: "0.82rem" }}
-                      >
-                        {item.time}
-                      </span>
-                    </div>
-                    <p
-                      style={{
-                        color: "var(--text-2)",
-                        lineHeight: 1.6,
-                        fontSize: "0.92rem",
-                      }}
-                    >
-                      {item.text}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }
+

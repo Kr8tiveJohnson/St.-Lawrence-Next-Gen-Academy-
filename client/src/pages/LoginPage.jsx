@@ -299,6 +299,27 @@ export default function LoginPage() {
                 Create one
               </Link>
             </div>
+
+            <div style={{ textAlign: "center", marginTop: "16px" }}>
+              <Link
+                to="/"
+                style={{
+                  color: "var(--text-3)",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  opacity: 0.7,
+                  transition: "opacity 0.2s",
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = 0.7}
+              >
+                ← Back to Home
+              </Link>
+            </div>
           </div>
         </div>
       </div>

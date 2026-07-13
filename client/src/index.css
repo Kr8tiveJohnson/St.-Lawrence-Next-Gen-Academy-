@@ -122,6 +122,13 @@ img {
     box-shadow: 0 1px 0 var(--border);
 }
 
+@media (max-width: 768px) {
+    .profile-page-nav,
+    .internal-page-nav {
+        padding: 10px 16px !important;
+    }
+}
+
 .nav-logo {
     display: flex;
     align-items: center;
@@ -3255,5 +3262,132 @@ img {
     .product-auth-page .login-card,
     .product-auth-page .register-card-shell {
         box-shadow: 0 10px 24px rgba(10, 22, 40, 0.05);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Chat Page Layout
+   ═══════════════════════════════════════════════════════════════ */
+.chat-page-main {
+    flex-direction: row;
+    align-items: flex-start;
+    height: calc(100vh - 65px);
+    overflow: hidden;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+.chat-sidebar {
+    flex-shrink: 0;
+    max-height: 100%;
+    overflow-y: auto;
+    width: 280px;
+}
+.chat-window {
+    flex: 1;
+    min-height: 0 !important;
+    height: 100%;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Mobile Responsive — Newly Built Pages
+   768px breakpoint
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    /* Internal sticky navs (Chat, Classrooms, Hall of Fame) */
+    .product-homepage .nav {
+        position: sticky !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        transform: none !important;
+        border-radius: 0 !important;
+        padding: 12px 16px !important;
+    }
+
+    /* Hall of Fame page header padding */
+    .product-homepage main.wrap {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    /* Hall of Fame grid: 1 column */
+    .hall-preview-grid {
+        display: grid;
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Hall of Fame CTA card: stack vertically */
+    .hall-cta-card {
+        flex-direction: column !important;
+        text-align: center;
+    }
+    .hall-cta-card a,
+    .hall-cta-card button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Chat: stack sidebar above chat window */
+    .chat-page-main {
+        flex-direction: column !important;
+        height: auto !important;
+        overflow: visible !important;
+        gap: 16px;
+        padding-top: 24px !important;
+        padding-bottom: 24px !important;
+    }
+    .chat-sidebar {
+        width: 100% !important;
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    .chat-window {
+        min-height: 460px !important;
+        height: 460px;
+        width: 100%;
+    }
+
+    /* Profile My Courses: stack course cards */
+    .profile-course-row {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+    }
+    .profile-course-row > button {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Mobile Responsive — Newly Built Pages
+   480px breakpoint
+   ═══════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+    /* Hall of Fame cards */
+    .hall-preview-card {
+        padding: 20px !important;
+    }
+    .hall-cta-card {
+        padding: 24px !important;
+    }
+
+    /* Chat window minimum height on very small screens */
+    .chat-window {
+        min-height: 380px !important;
+        height: 380px;
+    }
+
+    /* Prevent iOS zoom on input focus */
+    .product-homepage input,
+    .product-homepage select,
+    .product-homepage textarea {
+        font-size: 16px;
+    }
+
+    /* Classrooms grid — single column */
+    .product-homepage main .card[style*="grid"] {
+        grid-template-columns: 1fr;
     }
 }
