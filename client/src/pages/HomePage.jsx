@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import studentImg from "../assets/student.png";
 import logoImg from "../assets/St. Lawrence Next Gen Academy logo.png";
 import TimeWeatherWidget from "../components/common/TimeWeatherWidget.jsx";
 import client from "../api/client";
@@ -209,46 +208,57 @@ const PLANS = [
   {
     name: "Free",
     price: "₦0",
-    cycle: "/ forever",
-    accent: "var(--white)",
+    cycle: "/forever",
+    topBg: "var(--white)",
+    topColor: "var(--navy)",
+    bottomBg: "var(--white)",
+    accent: "var(--navy)",
     featured: false,
     features: [
-      "Browse homepage and announcements",
-      "Free past questions access",
-      "Selected free video lessons",
-      "Public success stories",
-      "Basic exam guidance",
+      "Browse homepage & news",
+      "Free past questions",
+      "Free course videos",
+      "Free classrooms",
+      "Hall of Fame access",
     ],
     cta: "Get Started Free",
   },
   {
     name: "Basic",
     price: "₦2,500",
-    cycle: "/ month",
-    accent:
-      "linear-gradient(180deg, rgba(212,168,83,0.08), rgba(255,255,255,1))",
+    cycle: "/per month",
+    topBg: "var(--navy)",
+    topColor: "var(--white)",
+    bottomBg: "var(--white)",
+    accent: "var(--navy)",
     featured: true,
     features: [
       "Everything in Free",
-      "Personal student profile",
-      "General classroom access",
-      "Extended question archive",
-      "Chat with approved peers",
+      "Personal profile visible",
+      "Friend requests (same country)",
+      "General Class access",
+      "Extended past questions archive",
+      "Chat with friends",
     ],
     cta: "Start Basic",
   },
   {
     name: "Premium",
     price: "₦5,000",
-    cycle: "/ month",
-    accent: "linear-gradient(180deg, rgba(10,22,40,0.04), rgba(255,255,255,1))",
+    cycle: "/per month",
+    topBg: "var(--gold)",
+    topColor: "var(--navy)",
+    bottomBg: "var(--white)",
+    accent: "var(--gold)",
     featured: false,
     features: [
       "Everything in Basic",
+      "Worldwide friend & chat",
+      "Full archive access",
       "All paid classrooms",
-      "Full archive and explanations",
-      "Downloadable course notes",
-      "Priority support and mentor rooms",
+      "Ad-free experience",
+      "Priority support",
+      "Download course notes"
     ],
     cta: "Go Premium",
   },
@@ -291,6 +301,9 @@ export default function HomePage() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [announcements, setAnnouncements] = useState([]);
+  const [upcomingExams, setUpcomingExams] = useState(UPCOMING_EXAMS);
+  const [trendingCourses, setTrendingCourses] = useState(TRENDING_COURSES);
+  const [hallOfFame, setHallOfFame] = useState(HALL_OF_FAME);
 
   useReveal();
 
@@ -305,6 +318,25 @@ export default function HomePage() {
         setAnnouncements(filtered.slice(0, 4));
       })
       .catch(() => {});
+      
+    // Fetch dynamic site content
+    client.get("/site-content/upcoming_exams").then(({ data }) => {
+      if (data?.value?.length > 0) setUpcomingExams(data.value);
+    }).catch(() => {});
+    
+    client.get("/site-content/trending_courses").then(({ data }) => {
+      if (data?.value?.length > 0) setTrendingCourses(data.value);
+    }).catch(() => {});
+
+    // Fetch Hall of Fame from DB
+    client.get("/news/hall-of-fame/entries").then(({ data }) => {
+      const entries = (data.entries || []).map(e => {
+        let extra = {};
+        try { extra = JSON.parse(e.details || "{}"); } catch {}
+        return { ...e, ...extra };
+      });
+      if (entries.length > 0) setHallOfFame(entries);
+    }).catch(() => {});
 
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -325,14 +357,14 @@ export default function HomePage() {
 
         <div className="nav-links hide-on-mobile">
           <a href="#home">Home</a>
-          <a href="#quick-access">Quick Access</a>
+          <Link to="/classrooms">Classrooms</Link>
+          <Link to="/groups">Communities</Link>
           <a href="#news">News</a>
           <a href="#hall-of-fame">Hall of Fame</a>
           <a href="#pricing">Pricing</a>
         </div>
 
         <div className="nav-actions hide-on-mobile" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <TimeWeatherWidget />
           <Link to="/register" className="nav-cta">
             Start Learning Free
           </Link>
@@ -364,22 +396,12 @@ export default function HomePage() {
             gap: "16px",
           }}
         >
-          {[
-            ["#home", "Home"],
-            ["#quick-access", "Quick Access"],
-            ["#news", "News & Announcements"],
-            ["#hall-of-fame", "Hall of Fame"],
-            ["#pricing", "Pricing"],
-          ].map(([href, label]) => (
-            <a
-              key={href}
-              href={href}
-              onClick={() => setMenuOpen(false)}
-              style={{ color: "var(--navy)", fontWeight: 700 }}
-            >
-              {label}
-            </a>
-          ))}
+          <a href="#home" onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>Home</a>
+          <Link to="/classrooms" onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>Classrooms</Link>
+          <Link to="/groups" onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>Communities</Link>
+          <a href="#news" onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>News & Announcements</a>
+          <a href="#hall-of-fame" onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>Hall of Fame</a>
+          <a href="#pricing" onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>Pricing</a>
           <Link
             to="/register"
             className="btn-primary"
@@ -391,15 +413,24 @@ export default function HomePage() {
         </div>
       )}
 
-      <section id="home" className="portal-hero">
-        <div className="portal-grid-accent" />
+      <section id="home" className="portal-hero" style={{ 
+        backgroundColor: 'var(--navy)', 
+        color: 'var(--white)',
+        backgroundImage: 'linear-gradient(rgba(10, 22, 40, 0.85), rgba(10, 22, 40, 0.95)), url("https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExc21sbXR6bm9sajJnNGlvdGF1dWhiZjkwOTI3MDY1emtkdDlpZzdjbiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/KVZWZQoS0yqfIiTAKq/giphy.gif")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}>
+        <div className="portal-grid-accent" style={{ 
+          backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)' 
+        }} />
         <div className="wrap portal-hero-inner">
           <div className="portal-hero-copy reveal">
 
-            <h1 className="portal-title">
+            <h1 className="portal-title" style={{ color: 'var(--white)' }}>
               Education, Exam Prep, And Digital Skills In One Trusted Platform
             </h1>
-            <p className="portal-subtitle">
+            <p className="portal-subtitle" style={{ color: 'rgba(255,255,255,0.85)' }}>
               Prepare for WAEC, JAMB, NECO, and GCE while building real-world
               digital skills through structured lessons, guided practice, and a
               strong student community.
@@ -408,7 +439,7 @@ export default function HomePage() {
               <Link to="/register" className="btn-primary">
                 Start Learning Free
               </Link>
-              <Link to="/past-questions" className="btn-ghost">
+              <Link to="/past-questions" className="btn-ghost" style={{ border: '1px solid rgba(255,255,255,0.5)', color: 'var(--white)' }}>
                 Browse Past Questions
               </Link>
             </div>
@@ -432,32 +463,31 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="portal-hero-side reveal reveal-delay-1">
-            <div className="portal-hero-visual">
-              <div className="portal-achievement-card">
-                <span className="portal-mini-label">Latest Achievement</span>
-                <h3>Adaeze Okonkwo scored 9 A1s in WAEC 2024 🎉</h3>
-                <p>
-                  Outstanding student performance continues to define the St.
-                  Lawrence standard.
-                </p>
+          <div className="portal-hero-side reveal reveal-delay-1" style={{ display: 'flex', flexDirection: 'column', gap: '32px', alignItems: 'center', width: '100%' }}>
+            
+            <div className="portal-achievement-card" style={{ 
+              width: '100%',
+              maxWidth: '440px',
+              background: 'rgba(255, 255, 255, 0.06)', 
+              border: '1px solid rgba(255, 255, 255, 0.12)', 
+              backdropFilter: 'blur(16px)',
+              borderRadius: '24px',
+              padding: '24px',
+              color: 'var(--white)',
+              boxShadow: '0 24px 48px rgba(0, 0, 0, 0.2)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+                <span style={{ background: 'rgba(223, 169, 33, 0.15)', color: 'var(--gold)', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '800', letterSpacing: '0.5px', textTransform: 'uppercase', border: '1px solid rgba(223, 169, 33, 0.3)' }}>
+                  🏆 Latest Achievement
+                </span>
               </div>
-
-              <div className="portal-student-card">
-                <img
-                  src={studentImg}
-                  alt="Student learning with St. Lawrence Academy"
-                />
-              </div>
-
-              <div className="portal-fact-card">
-                <span className="portal-mini-label">Did You Know?</span>
-                <p>
-                  WAEC has been certifying West African students for over 70
-                  years, making consistency and strategy essential.
-                </p>
-              </div>
+              <h3 style={{ color: 'var(--white)', margin: '0 0 8px 0', fontSize: '1.25rem', lineHeight: '1.4', fontWeight: '800' }}>Adaeze Okonkwo scored 9 A1s in WAEC 2024 🎉</h3>
+              <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.95rem', margin: 0, lineHeight: '1.5' }}>
+                Outstanding student performance continues to define the St. Lawrence standard.
+              </p>
             </div>
+
+            <TimeWeatherWidget />
           </div>
         </div>
       </section>
@@ -492,6 +522,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+
 
       <section id="quick-access" className="quick-access-section">
         <div className="wrap">
@@ -577,11 +609,11 @@ export default function HomePage() {
             <div className="sidebar-panel">
               <div className="sidebar-title">Upcoming Exams</div>
               <div className="sidebar-stack">
-                {UPCOMING_EXAMS.map((exam) => (
+                {upcomingExams.map((exam, idx) => (
                   <div
-                    key={exam.name}
+                    key={exam.name || idx}
                     className="mini-info-card"
-                    style={{ background: exam.color }}
+                    style={{ background: exam.color || 'rgba(59,130,246,0.1)' }}
                   >
                     <div>
                       <strong>{exam.name}</strong>
@@ -594,17 +626,25 @@ export default function HomePage() {
             </div>
 
             <div className="sidebar-panel">
-              <div className="sidebar-title">Trending University Courses</div>
+              <div className="sidebar-title" style={{ marginTop: "24px" }}>
+                Trending University Courses
+              </div>
               <div className="sidebar-stack">
-                {TRENDING_COURSES.map(([course, aspirants], index) => (
-                  <div key={course} className="subject-row">
-                    <div className="subject-info">
-                      <span className="subject-rank">{index + 1}</span>
-                      <strong>{course}</strong>
+                {trendingCourses.map((course, index) => {
+                  const rank = course.rank || (index + 1);
+                  const title = course.title || course[0];
+                  const aspirants = course.aspirants || course[1];
+                  
+                  return (
+                    <div key={title} className="subject-row">
+                      <div className="subject-info">
+                        <span className="subject-rank">{rank}</span>
+                        <strong>{title}</strong>
+                      </div>
+                      <span className="subject-count">{aspirants}</span>
                     </div>
-                    <span className="subject-count">{aspirants}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </aside>
@@ -631,14 +671,18 @@ export default function HomePage() {
           </div>
 
           <div className="hall-preview-grid">
-            {HALL_OF_FAME.map((student, index) => (
+            {hallOfFame.map((student, index) => (
               <div
-                key={student.name}
+                key={student.name || student.id || index}
                 className="hall-preview-card reveal"
                 style={{ transitionDelay: `${index * 100}ms` }}
               >
                 <div className="hall-preview-top">
-                  <span className="hall-preview-avatar">🏆</span>
+                  {student.imageUrl ? (
+                    <img src={student.imageUrl} alt={student.name} style={{ width: 52, height: 52, borderRadius: "50%", objectFit: "cover", border: "3px solid var(--gold)" }} />
+                  ) : (
+                    <span className="hall-preview-avatar">🏆</span>
+                  )}
                   <span className="hall-preview-track">{student.track}</span>
                 </div>
                 <h3>{student.name}</h3>
@@ -687,30 +731,55 @@ export default function HomePage() {
                 key={plan.name}
                 className={`pricing-card reveal${plan.featured ? " featured" : ""}`}
                 style={{
-                  background: plan.accent,
                   transitionDelay: `${index * 100}ms`,
+                  background: plan.bottomBg,
+                  padding: 0,
+                  overflow: 'hidden',
+                  border: plan.name === "Free" ? '1px solid rgba(0,0,0,0.05)' : 'none',
+                  boxShadow: plan.name === "Free" ? '0 10px 30px rgba(0,0,0,0.03)' : '0 20px 40px rgba(10,22,40,0.1)'
                 }}
               >
-                {plan.featured && (
-                  <div className="pricing-ribbon">Most Popular</div>
-                )}
-                <h3>{plan.name}</h3>
-                <div className="pricing-value">
-                  <strong>{plan.price}</strong>
-                  <span>{plan.cycle}</span>
+                <div className="pricing-card-top" style={{ background: plan.topBg, color: plan.topColor, padding: '20px 18px', position: 'relative' }}>
+                  {plan.featured && (
+                    <div className="pricing-ribbon" style={{ background: '#dfa921', color: '#fff', top: '24px', right: '24px' }}>Most Popular</div>
+                  )}
+                  <h3 style={{ color: plan.topColor, fontSize: '1.15rem', marginBottom: '6px' }}>{plan.name}</h3>
+                  <div className="pricing-value" style={{ color: plan.topColor, display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                    <strong style={{ color: plan.topColor, fontSize: '1.8rem', fontWeight: '900' }}>{plan.price}</strong>
+                    <span style={{ color: plan.topColor, opacity: 0.7 }}>{plan.cycle}</span>
+                  </div>
                 </div>
-                <ul>
-                  {plan.features.map((feature) => (
-                    <li key={feature}>{feature}</li>
-                  ))}
-                </ul>
-                <Link
-                  to="/register"
-                  className={plan.featured ? "btn-primary" : "btn-ghost"}
-                  style={{ justifyContent: "center" }}
-                >
-                  {plan.cta}
-                </Link>
+                <div className="pricing-card-bottom" style={{ padding: '18px', background: plan.bottomBg, display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 18px 0', flexGrow: 1 }}>
+                    {plan.features.map((feature) => (
+                      <li key={feature} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', color: 'var(--text-2)', fontSize: '0.82rem' }}>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#22c55e', flexShrink: 0 }}>
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <path d="M16 12l-4 4-2-2"></path>
+                        </svg>
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    to="/register"
+                    className="btn"
+                    style={{ 
+                      display: 'flex', 
+                      justifyContent: 'center', 
+                      width: '100%',
+                      background: plan.name === 'Free' ? 'transparent' : plan.accent,
+                      color: plan.name === 'Free' ? 'var(--navy)' : '#fff',
+                      border: plan.name === 'Free' ? '2px solid var(--navy)' : 'none',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      fontWeight: '700',
+                      transition: 'all 0.3s'
+                    }}
+                  >
+                    {plan.cta}
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
@@ -720,10 +789,12 @@ export default function HomePage() {
       <section className="why-platform-section">
         <div className="wrap">
           <div className="section-heading reveal">
-            <span className="eyebrow">Why Choose St. Lawrence?</span>
-            <h2 className="section-h2" style={{ marginTop: 10 }}>
-              Everything needed for exam success and modern skill building
+            <h2 className="section-h2" style={{ fontWeight: 'bold' }}>
+              Why Choose St. Lawrence?
             </h2>
+            <p style={{ marginTop: '10px', fontSize: '1rem', color: 'var(--text-2)', maxWidth: '600px', margin: '10px auto 0' }}>
+              Everything needed for exam success and modern skill building
+            </p>
           </div>
           <div className="value-grid">
             {VALUE_POINTS.map((item, index) => (

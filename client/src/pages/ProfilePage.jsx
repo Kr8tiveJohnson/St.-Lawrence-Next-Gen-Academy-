@@ -1,34 +1,35 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import logoImg from "../assets/St. Lawrence Next Gen Academy logo.png";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const { user: authUser, logout, loading } = useAuth();
   const [activeTab, setActiveTab] = useState("Overview");
 
   useEffect(() => {
-    const token = localStorage.getItem("sl_token");
-    if (!token) {
+    if (!loading && !authUser) {
       navigate("/login");
-      return;
     }
-    const storedUser = JSON.parse(localStorage.getItem("sl_user")) || {
-      firstName: "Student",
-      lastName: "One",
-      role: "Student",
-    };
-    setUser(storedUser);
-  }, [navigate]);
+  }, [authUser, loading, navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem("sl_token");
-    localStorage.removeItem("sl_user");
+    logout();
     navigate("/");
   };
 
-  if (!user)
+  if (loading || !authUser)
     return <div style={{ minHeight: "100vh", background: "#f3f6fb" }} />;
+
+  // Normalize user shape for this page
+  const user = {
+    firstName: authUser.profile?.fullName?.split(" ")[0] || authUser.email?.split("@")[0] || "Student",
+    lastName: authUser.profile?.fullName?.split(" ").slice(1).join(" ") || "",
+    role: authUser.role || "STUDENT",
+    tier: authUser.tier || "UNPAID",
+    email: authUser.email,
+  };
 
   const initials = `${user.firstName?.charAt(0) || "S"}${user.lastName?.charAt(0) || ""}`;
 

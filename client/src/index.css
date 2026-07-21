@@ -7,11 +7,11 @@
 
 /* ─── Design Tokens ─────────────────────────────────── */
 :root {
-    --navy: #0a1628;
-    --navy-mid: #0f2040;
-    --navy-soft: #1a3260;
-    --gold: #d4a853;
-    --gold-bright: #f0c96a;
+    --navy: #101c44;
+    --navy-mid: #152554;
+    --navy-soft: #1c3272;
+    --gold: #dfa921;
+    --gold-bright: #f4c243;
     --gold-dim: rgba(212, 168, 83, 0.22);
     --green: #22c55e;
     --green-dim: rgba(34, 197, 94, 0.15);
@@ -78,17 +78,16 @@ img {
 /* ─── Nav ────────────────────────────────────────────── */
 .nav {
     position: fixed;
-    top: 18px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: calc(100% - 40px);
-    max-width: 1200px;
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(28px) saturate(180%);
-    -webkit-backdrop-filter: blur(28px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    border-radius: var(--r-full);
-    padding: 12px 24px;
+    top: 0;
+    left: 0;
+    width: 100%;
+    max-width: none;
+    background: var(--navy);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none;
+    border-radius: 0;
+    padding: 16px 40px;
     z-index: 999;
     transition: var(--trans);
     display: flex;
@@ -98,8 +97,8 @@ img {
 }
 
 .nav.scrolled {
-    background: rgba(255, 255, 255, 0.92);
-    box-shadow: 0 4px 32px rgba(10, 22, 40, 0.1);
+    background: var(--navy);
+    box-shadow: 0 4px 32px rgba(10, 22, 40, 0.2);
 }
 
 /* Profile / internal page nav — resets the floating pill nav */
@@ -160,7 +159,7 @@ img {
 .nav-brand-name {
     font-size: 0.82rem;
     font-weight: 900;
-    color: var(--navy);
+    color: var(--white);
     line-height: 1.1;
 }
 .nav-brand-sub {
@@ -180,11 +179,11 @@ img {
 }
 
 .nav-links a {
-    color: var(--text-2);
+    color: rgba(255, 255, 255, 0.8);
 }
 .nav-links a:hover,
 .nav-links a.active {
-    color: var(--navy);
+    color: var(--white);
 }
 
 .nav-cta {
@@ -208,7 +207,7 @@ img {
     display: none;
     background: none;
     border: none;
-    color: var(--navy);
+    color: var(--white);
     font-size: 1.4rem;
     cursor: pointer;
     padding: 4px;
@@ -216,8 +215,8 @@ img {
 
 /* ─── Reveal Animations ──────────────────────────────── */
 .reveal {
-    opacity: 0;
-    transform: translateY(32px);
+    opacity: 1;
+    transform: translateY(0);
     transition:
         opacity 0.7s var(--ease),
         transform 0.7s var(--ease);
@@ -2656,14 +2655,13 @@ img {
 .pricing-card {
     position: relative;
     background: var(--white);
-    border-radius: 30px;
-    padding: 28px 24px;
-    display: grid;
-    gap: 18px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
 }
 .pricing-card.featured {
-    border-color: rgba(212, 168, 83, 0.3);
-    box-shadow: 0 22px 50px rgba(212, 168, 83, 0.16);
+    transform: scale(1.05);
+    z-index: 2;
 }
 .pricing-ribbon {
     position: absolute;
@@ -2685,9 +2683,8 @@ img {
 }
 .pricing-value strong {
     font-family: var(--font-h);
-    font-size: 2.1rem;
+    font-size: 2.5rem;
     font-weight: 900;
-    color: var(--navy);
 }
 .pricing-value span,
 .pricing-card li {
@@ -2695,8 +2692,9 @@ img {
 }
 .pricing-card ul {
     display: grid;
-    gap: 10px;
-    padding-left: 18px;
+    gap: 16px;
+    padding: 0;
+    margin: 0;
 }
 .value-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2820,7 +2818,29 @@ img {
     }
 
     .pricing-grid {
-        grid-template-columns: 1fr;
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        padding-bottom: 24px;
+        -webkit-overflow-scrolling: touch;
+        gap: 16px;
+    }
+    .pricing-card {
+        flex: 0 0 72%;
+        max-width: 270px;
+        scroll-snap-align: center;
+        padding: 16px !important;
+        border-radius: 18px !important;
+    }
+    .pricing-card h3 {
+        font-size: 1rem;
+        margin-bottom: 4px;
+    }
+    .pricing-card ul {
+        gap: 10px;
+    }
+    .pricing-card li {
+        font-size: 0.82rem;
     }
 
     .portal-hero {
@@ -2868,7 +2888,6 @@ img {
 
     .portal-stats-grid,
     .exam-overview-grid,
-    .quick-access-grid,
     .hall-preview-grid,
     .value-grid {
         grid-template-columns: 1fr;
@@ -3392,5 +3411,80 @@ img {
     /* Classrooms grid — single column */
     .product-homepage main .card[style*="grid"] {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ─── Mobile Responsiveness ──────────────────────────────── */
+@media (max-width: 992px) {
+    .bento-card.wide, .bento-card.med, .bento-card.third, .bento-card.half {
+        grid-column: span 12 !important;
+    }
+    .portal-hero {
+        padding: 120px 0 60px;
+    }
+    .hero-h1 {
+        font-size: clamp(2.5rem, 8vw, 4rem);
+    }
+    .portal-grid, .news-grid, .hall-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .sidebar-panel {
+        width: 100%;
+        margin-top: 40px;
+    }
+    .news-layout {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 768px) {
+    .hide-on-mobile {
+        display: none !important;
+    }
+    .nav-links {
+        display: none !important;
+    }
+    .nav-links.mobile-open {
+        display: flex !important;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        flex-direction: column;
+        background: var(--navy);
+        padding: 20px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+    .nav-hamburger {
+        display: block !important;
+    }
+    .nav-cta {
+        display: none;
+    }
+    .hero {
+        flex-direction: column;
+        text-align: center;
+        padding-top: 120px;
+    }
+    .hero-desc {
+        margin: 0 auto 30px auto;
+    }
+    .cta-group {
+        justify-content: center;
+    }
+    .stat-strip {
+        justify-content: center;
+    }
+    .float-bubble {
+        display: none;
+    }
+    .footer-content {
+        flex-direction: column;
+        text-align: center;
+        gap: 30px;
+    }
+    .footer-links {
+        align-items: center;
     }
 }

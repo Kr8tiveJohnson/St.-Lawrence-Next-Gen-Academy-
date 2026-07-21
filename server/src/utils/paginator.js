@@ -1,1 +1,7 @@
-﻿// paginator — cursor-based and offset pagination helpers for large past-question and news archives
+// paginator.js - Pagination helper for Prisma
+const getPagination = (page = 1, limit = 10) => {
+    const skip = (page - 1) * limit;
+    return { skip, take: parseInt(limit) };
+};
+
+module.exports = { getPagination };

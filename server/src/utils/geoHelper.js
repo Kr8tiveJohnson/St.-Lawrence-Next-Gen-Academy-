@@ -1,1 +1,7 @@
-﻿// geoHelper — country/state extraction from user profile; enforces geo-fence rules (FREE=same country, PREMIUM=worldwide)
+// geoHelper.js - Geolocation helper (placeholder)
+const isSameCountry = (req) => {
+    // Basic placeholder for IP checks
+    return true; 
+};
+
+module.exports = { isSameCountry };

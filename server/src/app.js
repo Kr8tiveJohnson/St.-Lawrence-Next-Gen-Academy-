@@ -13,6 +13,7 @@ const friendRoutes = require('./routes/friend.routes');
 const adminRoutes = require('./routes/admin.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
+const siteContentRoutes = require('./routes/siteContent.routes');
 
 const app = express();
 
@@ -32,6 +33,30 @@ app.use('/api/friends', friendRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/site-content', siteContentRoutes);
+
+// Root route
+app.get('/', (req, res) => {
+  res.status(200).json({
+    name: 'St. Lawrence Next Gen Academy API',
+    version: '1.0.0',
+    status: 'running',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      users: '/api/users',
+      groups: '/api/groups',
+      classrooms: '/api/classrooms',
+      chat: '/api/chat',
+      news: '/api/news',
+      questions: '/api/questions',
+      friends: '/api/friends',
+      admin: '/api/admin',
+      payments: '/api/payments',
+      analytics: '/api/analytics',
+    }
+  });
+});
 
 // Health check
 app.get('/api/health', (req, res) => {

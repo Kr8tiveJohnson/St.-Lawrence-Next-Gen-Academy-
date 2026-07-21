@@ -8,11 +8,13 @@ async function authMiddleware(req, res, next) {
   }
 
   const token = authHeader.split(' ')[1];
-  const decoded = verifyToken(token);
+  const tokenResult = verifyToken(token);
 
-  if (!decoded) {
+  if (!tokenResult.valid || !tokenResult.decoded) {
     return res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
   }
+  
+  const decoded = tokenResult.decoded;
 
   // Standalone admin token (no user record in DB)
   if (decoded.isStandaloneAdmin) {

@@ -1,1 +1,6 @@
-﻿// geoRules.js — Geo-fence tier definitions (FREE=same country; PREMIUM=worldwide)
+const GEO_RULES = {
+  FREE: 'SAME_COUNTRY',
+  PREMIUM: 'WORLDWIDE'
+};
+
+module.exports = { GEO_RULES };

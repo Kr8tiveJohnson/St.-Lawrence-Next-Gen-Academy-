@@ -1,1 +1,8 @@
-﻿// examTypes.js — Exam type enum: WAEC, JAMB, NECO, GCE (extensible array for future additions)
+const EXAM_TYPES = {
+  WAEC: 'WAEC',
+  JAMB: 'JAMB',
+  NECO: 'NECO',
+  GCE: 'GCE'
+};
+
+module.exports = { EXAM_TYPES };

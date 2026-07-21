@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import client from "../api/client";
 import logoImg from "../assets/St. Lawrence Next Gen Academy logo.png";
+import HomepageSettings from "../features/admin/HomepageSettings";
 
 // ─── SVG Icon ────────────────────────────────────────────────────────────────
 function Icon({ path, size = 18, color = "currentColor", stroke = 1.8 }) {
@@ -29,7 +30,8 @@ const ICONS = {
   menu:      "M4 6h16M4 12h16M4 18h16",
   check:     "M5 13l4 4L19 7",
   x:         "M6 18L18 6M6 6l12 12",
-  wallet:    "M20 12V8H6a2 2 0 012-2h12V4a2 2 0 00-2-2H4a2 2 0 00-2 2v16a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2h-2m-4 0v4H6V12z"
+  wallet:    "M20 12V8H6a2 2 0 012-2h12V4a2 2 0 00-2-2H4a2 2 0 00-2 2v16a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2h-2m-4 0v4H6V12z",
+  settings:  "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z"
 };
 
 const NAV = [
@@ -41,6 +43,7 @@ const NAV = [
   { id: "Fame",       label: "Hall of Fame",       icon: "fame"      },
   { id: "Earnings",   label: "Earnings",           icon: "wallet"    },
   { id: "Analytics",  label: "Analytics",          icon: "analytics" },
+  { id: "Settings",   label: "Homepage Settings",  icon: "settings"  },
   { id: "Moderation", label: "Moderation",         icon: "shield"    },
 ];
 
@@ -423,14 +426,19 @@ function FameTab() {
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
-  const [form, setForm] = useState({ title: "", summary: "", details: "", imageUrl: "" });
+  const [form, setForm] = useState({ name: "", track: "", score: "", achievement: "", imageUrl: "" });
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const { data } = await client.get("/news/hall-of-fame/entries");
-      setEntries(data.entries || []);
+      const parsed = (data.entries || []).map(e => {
+        let extra = {};
+        try { extra = JSON.parse(e.details || "{}"); } catch {}
+        return { ...e, ...extra };
+      });
+      setEntries(parsed);
     } catch (e) { console.error(e); }
     setLoading(false);
   }, []);
@@ -438,25 +446,43 @@ function FameTab() {
   useEffect(() => { load(); }, [load]);
 
   const openCreate = () => {
-    setForm({ title: "", summary: "", details: "", imageUrl: "" });
+    setForm({ name: "", track: "", score: "", achievement: "", imageUrl: "" });
     setEditItem(null);
     setModal(true);
   };
 
   const openEdit = (item) => {
-    setForm({ title: item.title, summary: item.summary, details: item.details, imageUrl: item.imageUrl || "" });
+    setForm({
+      name: item.name || item.title || "",
+      track: item.track || "",
+      score: item.score || "",
+      achievement: item.achievement || item.summary || "",
+      imageUrl: item.imageUrl || "",
+    });
     setEditItem(item);
     setModal(true);
   };
 
   const submit = async (e) => {
     e.preventDefault();
+    if (!form.name || !form.track || !form.score || !form.achievement) {
+      alert("Please fill in Name, Track, Score, and Achievement.");
+      return;
+    }
     setSaving(true);
+    // We store structured data: title = name, summary = achievement, details = JSON blob
+    const payload = {
+      title: form.name,
+      summary: form.achievement,
+      details: JSON.stringify({ name: form.name, track: form.track, score: form.score, achievement: form.achievement }),
+      imageUrl: form.imageUrl,
+      tag: "hall-of-fame"
+    };
     try {
       if (editItem) {
-        await client.put(`/news/${editItem.id}`, { ...form, tag: "hall-of-fame" }, { headers: adminHeaders() });
+        await client.put(`/news/${editItem.id}`, payload, { headers: adminHeaders() });
       } else {
-        await client.post("/news/hall-of-fame/add", form, { headers: adminHeaders() });
+        await client.post("/news/hall-of-fame/add", { title: form.name, summary: form.achievement, details: JSON.stringify({ name: form.name, track: form.track, score: form.score, achievement: form.achievement }), imageUrl: form.imageUrl }, { headers: adminHeaders() });
       }
       setModal(false);
       load();
@@ -472,40 +498,55 @@ function FameTab() {
   return (
     <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #f0f0f0" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-        <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#0f2144" }}>Hall of Fame ({entries.length})</h2>
+        <div>
+          <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#0f2144" }}>Hall of Fame ({entries.length})</h2>
+          <p style={{ margin: "4px 0 0 0", fontSize: "0.8rem", color: "#9ca3af" }}>Manage student achievement entries displayed on the homepage</p>
+        </div>
         <button onClick={openCreate} style={{ background: "#d4a853", color: "#fff", border: "none", borderRadius: "10px", padding: "10px 18px", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", fontFamily: "inherit" }}>+ Add Entry</button>
       </div>
       {loading ? <p style={{ color: "#9ca3af", textAlign: "center" }}>Loading...</p> : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "16px" }}>
           {entries.map(e => (
-            <div key={e.id} style={{ display: "flex", gap: "16px", padding: "14px 16px", border: "1px solid #fef9c3", borderRadius: "12px", background: "#fffbeb" }}>
-              <div style={{ width: 80, height: 60, borderRadius: "8px", background: "#fef08a", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div key={e.id} style={{ border: "1px solid #fef9c3", borderRadius: "16px", background: "linear-gradient(135deg, #fffbeb 0%, #fff 100%)", overflow: "hidden" }}>
+              <div style={{ height: 100, background: "linear-gradient(135deg, #d4a853, #f59e0b)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
                 {e.imageUrl ? (
-                  <img src={e.imageUrl} alt={e.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  <img src={e.imageUrl} alt={e.name || e.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 ) : (
-                  <span style={{ fontSize: "1.5rem" }}>🎓</span>
+                  <span style={{ fontSize: "3rem" }}>🏆</span>
                 )}
+                <div style={{ position: "absolute", top: 8, right: 10, background: "rgba(0,0,0,0.45)", color: "#fde68a", fontSize: "0.7rem", fontWeight: 800, padding: "3px 10px", borderRadius: "20px", letterSpacing: "0.04em" }}>
+                  {e.track || "Achievement"}
+                </div>
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, color: "#92400e", marginBottom: "2px" }}>{e.title}</div>
-                <div style={{ fontSize: "0.82rem", color: "#a16207" }}>{e.summary}</div>
-              </div>
-              <div style={{ display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}>
-                <button onClick={() => openEdit(e)} style={{ background: "#fef3c7", color: "#92400e", border: "none", borderRadius: "8px", padding: "7px 12px", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}>Edit</button>
-                <button onClick={() => del(e.id)} style={{ background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: "8px", padding: "7px 12px", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}>Remove</button>
+              <div style={{ padding: "16px" }}>
+                <div style={{ fontWeight: 800, color: "#92400e", fontSize: "1rem", marginBottom: "4px" }}>{e.name || e.title}</div>
+                <div style={{ fontSize: "1.2rem", fontWeight: 900, color: "#d4a853", marginBottom: "6px" }}>{e.score}</div>
+                <div style={{ fontSize: "0.82rem", color: "#a16207", lineHeight: 1.5 }}>{e.achievement || e.summary}</div>
+                <div style={{ display: "flex", gap: "8px", marginTop: "14px" }}>
+                  <button onClick={() => openEdit(e)} style={{ flex: 1, background: "#fef3c7", color: "#92400e", border: "none", borderRadius: "8px", padding: "8px", cursor: "pointer", fontWeight: 700, fontSize: "0.8rem" }}>✏️ Edit</button>
+                  <button onClick={() => del(e.id)} style={{ background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: "8px", padding: "8px 14px", cursor: "pointer", fontWeight: 700, fontSize: "0.8rem" }}>🗑 Remove</button>
+                </div>
               </div>
             </div>
           ))}
-          {entries.length === 0 && <p style={{ textAlign: "center", color: "#9ca3af", padding: "40px" }}>No Hall of Fame entries yet.</p>}
+          {entries.length === 0 && (
+            <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "60px 40px", color: "#9ca3af" }}>
+              <div style={{ fontSize: "3rem", marginBottom: "12px" }}>🏆</div>
+              <p style={{ margin: 0, fontWeight: 600 }}>No Hall of Fame entries yet.</p>
+              <p style={{ margin: "6px 0 0", fontSize: "0.85rem" }}>Click <strong>+ Add Entry</strong> to celebrate your first student win!</p>
+            </div>
+          )}
         </div>
       )}
+
       {modal && (
         <Modal title={editItem ? "Edit Hall of Fame Entry" : "Add Hall of Fame Entry"} onClose={() => setModal(false)}>
           <form onSubmit={submit}>
-            <FormInput label="Name / Title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. John Doe — WAEC Top Score 2025" required />
-            <ImageUploader label="Student / Award Photo" value={form.imageUrl} onChange={val => setForm({ ...form, imageUrl: val })} />
-            <FormInput label="Achievement Summary" value={form.summary} onChange={e => setForm({ ...form, summary: e.target.value })} placeholder="Brief description of the achievement" required />
-            <FormInput as="textarea" label="Full Story" value={form.details} onChange={e => setForm({ ...form, details: e.target.value })} placeholder="Full details about this achievement..." />
+            <FormInput label="Student Name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Adaeze Okonkwo" required />
+            <FormInput label="Exam Track & Year" value={form.track} onChange={e => setForm({ ...form, track: e.target.value })} placeholder="e.g. WAEC SSCE · 2024" required />
+            <FormInput label="Score / Result" value={form.score} onChange={e => setForm({ ...form, score: e.target.value })} placeholder="e.g. 9 A1s   or   340 / 400" required />
+            <FormInput label="University / Achievement" value={form.achievement} onChange={e => setForm({ ...form, achievement: e.target.value })} placeholder="e.g. University of Lagos — Medicine" required />
+            <ImageUploader label="Student Photo (optional)" value={form.imageUrl} onChange={val => setForm({ ...form, imageUrl: val })} />
             <SubmitBtn loading={saving} label={editItem ? "Save Changes" : "Add to Hall of Fame"} />
           </form>
         </Modal>
@@ -818,11 +859,9 @@ export default function AdminPage() {
   const [stats, setStats] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const fetchStats = useCallback(async (token) => {
+  const fetchStats = useCallback(async () => {
     try {
-      const { data } = await client.get("/admin/stats", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const { data } = await client.get("/admin/stats");
       setStats(data);
     } catch (e) {}
   }, []);
@@ -830,7 +869,7 @@ export default function AdminPage() {
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
     if (!token) { navigate("/admin-login"); return; }
-    fetchStats(token);
+    fetchStats();
   }, [navigate, fetchStats, activeTab]); // Reload stats when changing tabs (e.g. dashboard vs earnings)
 
   const handleLogout = () => {
@@ -848,6 +887,7 @@ export default function AdminPage() {
       case "Fame":       return <FameTab />;
       case "Earnings":   return <EarningsTab stats={stats} />;
       case "Analytics":  return <AnalyticsTab stats={stats} />;
+      case "Settings":   return <HomepageSettings />;
       case "Moderation": return (
         <div style={{ background: "#fff", borderRadius: "16px", padding: "40px", textAlign: "center", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
           <Icon path={ICONS.shield} size={48} color="#d4a853" />

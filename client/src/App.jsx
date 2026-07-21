@@ -11,6 +11,7 @@ import AdminPage from "./pages/AdminPage.jsx";
 import AdminLoginPage from "./pages/AdminLoginPage.jsx";
 import HallOfFamePage from "./pages/HallOfFamePage.jsx";
 import ChatPage from "./pages/ChatPage.jsx";
+import GroupsPage from "./pages/GroupsPage.jsx";
 import NotFoundPage from "./pages/NotFoundPage.jsx";
 import TermsPage from "./pages/TermsPage.jsx";
 import PrivacyPage from "./pages/PrivacyPage.jsx";
@@ -31,6 +32,8 @@ export default function App() {
           <Route path="/admin-login" element={<AdminLoginPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/hall-of-fame" element={<HallOfFamePage />} />
+          <Route path="/classrooms" element={<ClassroomsPage />} />
+          <Route path="/groups" element={<GroupsPage />} />
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />

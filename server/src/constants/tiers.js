@@ -1,1 +1,7 @@
-﻿// tiers.js — Tier enum: FREE, GENERAL_CLASS, PREMIUM, AD_FREE
+const TIERS = {
+  PUBLIC: 'PUBLIC',
+  UNPAID: 'UNPAID',
+  PAID: 'PAID'
+};
+
+module.exports = { TIERS };

@@ -1,1 +1,19 @@
-﻿// status.js — Status enums: account (active/suspended/banned), photo (pending/approved/rejected), payment (success/pending/failed)
+const STATUS = {
+  ACCOUNT: {
+    ACTIVE: 'ACTIVE',
+    SUSPENDED: 'SUSPENDED',
+    BANNED: 'BANNED'
+  },
+  PHOTO: {
+    PENDING: 'PENDING',
+    APPROVED: 'APPROVED',
+    REJECTED: 'REJECTED'
+  },
+  PAYMENT: {
+    PENDING: 'PENDING',
+    SUCCESS: 'SUCCESS',
+    FAILED: 'FAILED'
+  }
+};
+
+module.exports = { STATUS };

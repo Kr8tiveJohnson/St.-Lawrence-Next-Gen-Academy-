@@ -1,19 +1,15 @@
-import { useEffect, useState } from "react";
-import client from "../api/client";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import CourseList from "../features/classrooms/CourseList";
 import logoImg from "../assets/St. Lawrence Next Gen Academy logo.png";
+import client from "../api/client";
 
-export default function Classrooms() {
+export default function ClassroomsPage() {
   const { isTeacher, user } = useAuth();
-  const [groups, setGroups] = useState([]);
+  const [showRequest, setShowRequest] = useState(false);
   const [requestForm, setRequestForm] = useState({ groupName: "", type: "CLASSROOM", reason: "" });
   const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    client.get("/groups").then(({ data }) => setGroups(data.groups));
-  }, []);
-
-  const canRequest = isTeacher || user?.role === "STUDENT";
 
   async function submitRequest(e) {
     e.preventDefault();
@@ -22,130 +18,87 @@ export default function Classrooms() {
       await client.post("/groups/requests", requestForm);
       setMessage("Request sent to admins for review.");
       setRequestForm({ groupName: "", type: "CLASSROOM", reason: "" });
+      setShowRequest(false);
     } catch (err) {
       setMessage(err.response?.data?.error || "Could not submit request");
     }
   }
 
   return (
-    <div className="product-homepage" style={{ minHeight: "100vh", background: "var(--off-white)", display: "flex", flexDirection: "column" }}>
-      {/* ── TOP NAV ───────────────────────────────────── */}
+    <div style={{ background: "var(--off-white)", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      {/* NAV */}
       <nav className="nav internal-page-nav" style={{ padding: 0 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", maxWidth: "1100px", margin: "0 auto" }}>
-          <a href="/" className="nav-logo" style={{ textDecoration: "none" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", maxWidth: "1200px", margin: "0 auto" }}>
+          <Link to="/" className="nav-logo" style={{ textDecoration: "none" }}>
             <img src={logoImg} alt="St. Lawrence Next Gen Academy" className="nav-logo-img" />
             <div>
               <div className="nav-brand-name">ST. LAWRENCE</div>
               <div className="nav-brand-sub hide-on-mobile">NEXT GEN ACADEMY</div>
             </div>
-          </a>
-          <div className="internal-page-actions" style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-            <a href="/profile" className="nav-cta" style={{ background: "transparent", color: "var(--navy)", border: "1px solid var(--border)", textDecoration: "none" }}>
-              Back to Profile
-            </a>
+          </Link>
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            {(isTeacher || user?.role === "STUDENT") && (
+              <button
+                onClick={() => setShowRequest(v => !v)}
+                className="btn-ghost"
+                style={{ padding: "8px 16px", fontSize: "0.85rem" }}
+              >
+                + Request Classroom
+              </button>
+            )}
+            <Link to="/profile" className="btn-ghost" style={{ padding: "8px 16px", fontSize: "0.8rem" }}>My Profile</Link>
           </div>
         </div>
       </nav>
 
-      <main className="wrap" style={{ flex: 1, padding: "60px 0", maxWidth: "1000px", width: "100%" }}>
-        <div style={{ marginBottom: "40px", display: "flex", justifyContent: "space-between", alignItems: "flex-end", flexWrap: "wrap", gap: "16px" }}>
-          <div>
-            <h1 style={{ fontSize: "2.4rem", color: "var(--navy)", margin: "0 0 12px 0" }}>Classrooms & Groups</h1>
-            <p style={{ color: "var(--text-light)", fontSize: "1.1rem", margin: 0 }}>Join focused sessions, revision labs, and cohort teaching rooms.</p>
-          </div>
+      <main style={{ flex: 1, padding: "40px 24px", maxWidth: "1200px", width: "100%", margin: "0 auto", boxSizing: "border-box" }}>
+        <div style={{ marginBottom: "28px" }}>
+          <h1 style={{ fontSize: "2rem", color: "var(--navy)", margin: "0 0 8px 0" }}>Video Classrooms</h1>
+          <p style={{ color: "var(--text-muted)", margin: 0 }}>Watch lessons, track progress and learn at your own pace.</p>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px", marginBottom: "48px" }}>
-          {groups.map((g) => (
-            <div key={g.id} className="card" style={{ display: "flex", flexDirection: "column", padding: "24px", background: "var(--white)", borderRadius: "20px", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.02)", transition: "transform 0.2s ease", cursor: "pointer" }} onMouseOver={(e) => e.currentTarget.style.transform = "translateY(-4px)"} onMouseOut={(e) => e.currentTarget.style.transform = "translateY(0)"}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-                <div style={{ width: 48, height: 48, borderRadius: "12px", background: g.isPaid ? "rgba(212,168,83,0.15)" : "rgba(34,197,94,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem" }}>
-                  {g.type === "CLASSROOM" ? "🏫" : g.type === "CHATROOM" ? "💬" : "👥"}
-                </div>
-                <div style={{ display: "flex", gap: "6px", flexDirection: "column", alignItems: "flex-end" }}>
-                  <span style={{ 
-                    background: g.isPaid ? "rgba(212,168,83,0.15)" : "rgba(34,197,94,0.15)", 
-                    color: g.isPaid ? "#b45309" : "#16a34a", 
-                    padding: "4px 10px", 
-                    borderRadius: "8px", 
-                    fontSize: "0.75rem", 
-                    fontWeight: 800,
-                    textTransform: "uppercase" 
-                  }}>
-                    {g.isPaid ? "Premium" : "Free"}
-                  </span>
-                  {g.isGeneralClass && (
-                    <span style={{ background: "var(--navy)", color: "var(--white)", padding: "4px 10px", borderRadius: "8px", fontSize: "0.75rem", fontWeight: 800 }}>
-                      General Class
-                    </span>
-                  )}
-                </div>
+        {/* Request Form */}
+        {showRequest && (
+          <div style={{ background: "white", borderRadius: "20px", padding: "32px", border: "1px solid var(--border)", boxShadow: "0 8px 24px rgba(0,0,0,0.04)", maxWidth: "560px", marginBottom: "32px" }}>
+            <h3 style={{ color: "var(--navy)", marginBottom: "20px" }}>Request a New Classroom / Group</h3>
+            {message && (
+              <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: "10px", padding: "12px 16px", color: "#16a34a", fontSize: "0.9rem", marginBottom: "16px" }}>
+                ✓ {message}
               </div>
-              <h3 style={{ fontSize: "1.25rem", color: "var(--navy)", marginBottom: "6px" }}>{g.name}</h3>
-              <div style={{ color: "var(--text-muted)", fontSize: "0.85rem", textTransform: "capitalize" }}>{g.type.toLowerCase()}</div>
-              
-              <div style={{ marginTop: "auto", paddingTop: "20px" }}>
-                <button className="btn-primary" style={{ width: "100%", justifyContent: "center", background: g.isPaid ? "var(--gold)" : "var(--navy)", color: g.isPaid ? "var(--navy)" : "var(--white)" }}>
-                  Enter {g.type.toLowerCase()}
-                </button>
-              </div>
-            </div>
-          ))}
-          {groups.length === 0 && (
-            <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: "60px 20px", background: "var(--white)", borderRadius: "20px", border: "1px dashed var(--border)" }}>
-              <div style={{ fontSize: "3rem", marginBottom: "16px", opacity: 0.5 }}>🏫</div>
-              <h3 style={{ color: "var(--navy)", marginBottom: "8px" }}>No classrooms yet</h3>
-              <p style={{ color: "var(--text-muted)" }}>You're not enrolled in any classrooms yet — enrollment is managed by an admin.</p>
-            </div>
-          )}
-        </div>
-
-        {canRequest && (
-          <div className="card" style={{ maxWidth: 600, background: "var(--white)", borderRadius: "24px", padding: "40px", border: "1px solid var(--border)", boxShadow: "0 12px 32px rgba(0,0,0,0.02)" }}>
-            <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
-              <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(59,130,246,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.5rem" }}>📝</div>
+            )}
+            <form onSubmit={submitRequest} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <div>
-                <h3 style={{ fontSize: "1.4rem", color: "var(--navy)", marginBottom: "6px" }}>Request a new classroom / group</h3>
-                <p style={{ color: "var(--text-muted)", fontSize: "0.95rem", lineHeight: 1.5 }}>
-                  An admin will review and grant this free or conditional on payment. Once granted, you manage it yourself.
-                </p>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--navy)", marginBottom: "6px" }}>Name</label>
+                <input required value={requestForm.groupName} onChange={e => setRequestForm({ ...requestForm, groupName: e.target.value })}
+                  placeholder="e.g. Intensive Math Revision"
+                  style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1px solid var(--border)", fontSize: "0.9rem", boxSizing: "border-box" }} />
               </div>
-            </div>
-            
-            <form onSubmit={submitRequest} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "var(--text-3)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Name</label>
-                <input required value={requestForm.groupName} onChange={(e) => setRequestForm({ ...requestForm, groupName: e.target.value })} style={{ width: "100%", padding: "14px 16px", borderRadius: "12px", border: "1px solid var(--border)", fontSize: "1rem", outline: "none", background: "var(--off-white)" }} placeholder="e.g. Intensive Math Revision" />
-              </div>
-              
-              <div>
-                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "var(--text-3)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Type</label>
-                <select value={requestForm.type} onChange={(e) => setRequestForm({ ...requestForm, type: e.target.value })} style={{ width: "100%", padding: "14px 16px", borderRadius: "12px", border: "1px solid var(--border)", fontSize: "1rem", outline: "none", background: "var(--off-white)", cursor: "pointer" }}>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--navy)", marginBottom: "6px" }}>Type</label>
+                <select value={requestForm.type} onChange={e => setRequestForm({ ...requestForm, type: e.target.value })}
+                  style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1px solid var(--border)", fontSize: "0.9rem" }}>
                   <option value="CLASSROOM">Classroom</option>
-                  <option value="GROUP">Group</option>
-                  <option value="CHATROOM">Chat room</option>
+                  <option value="GROUP">Study Group</option>
+                  <option value="CHATROOM">Chat Room</option>
                 </select>
               </div>
-              
               <div>
-                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 700, color: "var(--text-3)", marginBottom: "8px", textTransform: "uppercase", letterSpacing: "0.05em" }}>Reason</label>
-                <textarea required value={requestForm.reason} onChange={(e) => setRequestForm({ ...requestForm, reason: e.target.value })} style={{ width: "100%", padding: "14px 16px", borderRadius: "12px", border: "1px solid var(--border)", fontSize: "1rem", outline: "none", background: "var(--off-white)", minHeight: "100px", resize: "vertical" }} placeholder="Why do you need this space?" />
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--navy)", marginBottom: "6px" }}>Reason</label>
+                <textarea required value={requestForm.reason} onChange={e => setRequestForm({ ...requestForm, reason: e.target.value })}
+                  placeholder="Why do you need this space?" rows={3}
+                  style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1px solid var(--border)", fontSize: "0.9rem", resize: "vertical", boxSizing: "border-box" }} />
               </div>
-              
-              {message && (
-                <div style={{ background: "rgba(34,197,94,0.1)", color: "#16a34a", padding: "12px 16px", borderRadius: "12px", fontSize: "0.95rem", fontWeight: 600 }}>
-                  ✓ {message}
-                </div>
-              )}
-              
-              <button className="btn-primary" style={{ marginTop: "8px", padding: "14px", justifyContent: "center", fontSize: "1.05rem" }}>
-                Submit Request
-              </button>
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button type="submit" className="btn-primary">Submit Request</button>
+                <button type="button" onClick={() => setShowRequest(false)} className="btn-ghost">Cancel</button>
+              </div>
             </form>
           </div>
         )}
+
+        {/* Course Grid */}
+        <CourseList />
       </main>
     </div>
   );
 }
-

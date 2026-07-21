@@ -179,3 +179,10 @@ model Payment {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+
+model SiteContent {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+}
