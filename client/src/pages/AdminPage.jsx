@@ -37,6 +37,7 @@ const ICONS = {
 const NAV = [
   { id: "Dashboard",  label: "Dashboard",         icon: "dashboard" },
   { id: "Users",      label: "Users",              icon: "users"     },
+  { id: "Groups",     label: "Group Management",   icon: "users"     },
   { id: "Teachers",   label: "Teacher Approvals",  icon: "teachers"  },
   { id: "Courses",    label: "Courses & Lessons",  icon: "courses"   },
   { id: "News",       label: "News Management",    icon: "news"      },
@@ -230,11 +231,118 @@ function DashboardTab({ stats, onNav }) {
   );
 }
 
+// ─── User Detail Modal (Admin) ───────────────────────────────────────────────
+function UserDetailModal({ userId, onClose }) {
+  const [detail, setDetail] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await client.get(`/admin/users/${userId}`, { headers: adminHeaders() });
+        setDetail(data);
+      } catch (e) { console.error(e); }
+      setLoading(false);
+    })();
+  }, [userId]);
+
+  const badgeColor = { STUDENT: "#6366f1", TEACHER: "#0ea5e9", ADMIN: "#d4a853", MAIN_ADMIN: "#ef4444" };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(10,22,40,0.55)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20, backdropFilter: "blur(6px)" }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: "#fff", borderRadius: 24, padding: 32, width: "100%", maxWidth: 580, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 32px 80px rgba(0,0,0,0.22)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <h2 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800, color: "#0f2144" }}>👤 User Profile</h2>
+          <button onClick={onClose} style={{ background: "#f1f5f9", border: "none", borderRadius: "50%", width: 32, height: 32, cursor: "pointer", fontSize: "1rem" }}>✕</button>
+        </div>
+
+        {loading ? (
+          <p style={{ textAlign: "center", color: "#9ca3af", padding: "40px 0" }}>Loading user details...</p>
+        ) : !detail ? (
+          <p style={{ textAlign: "center", color: "#ef4444" }}>Failed to load user.</p>
+        ) : (() => {
+          const { user, stats, friends, groups } = detail;
+          return (
+            <>
+              {/* Avatar + Basic Info */}
+              <div style={{ display: "flex", gap: 20, alignItems: "center", marginBottom: 24 }}>
+                <div style={{ width: 72, height: 72, borderRadius: "50%", overflow: "hidden", background: "#0f2144", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {user.profile?.avatarUrl
+                    ? <img src={user.profile.avatarUrl} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <span style={{ color: "#d4a853", fontWeight: 900, fontSize: "1.6rem" }}>{(user.profile?.fullName || user.email || "?")[0].toUpperCase()}</span>
+                  }
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, color: "#0f2144", fontSize: "1.1rem", fontWeight: 800 }}>{user.profile?.fullName || "No name set"}</h3>
+                  <p style={{ margin: "3px 0", color: "#6b7280", fontSize: "0.88rem" }}>{user.email}</p>
+                  <div style={{ display: "flex", gap: 8, marginTop: 6, flexWrap: "wrap" }}>
+                    <span style={{ background: `${badgeColor[user.role] || "#6b7280"}18`, color: badgeColor[user.role] || "#6b7280", padding: "3px 10px", borderRadius: 99, fontSize: "0.76rem", fontWeight: 700 }}>{user.role}</span>
+                    <span style={{ background: user.tier === "PAID" ? "#fef3c718" : "#f1f5f9", color: user.tier === "PAID" ? "#d97706" : "#6b7280", padding: "3px 10px", borderRadius: 99, fontSize: "0.76rem", fontWeight: 700 }}>{user.tier}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats Row */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
+                {[{label: "Friends", val: stats.friendsCount, icon: "🤝"}, {label: "Groups", val: stats.groupsCount, icon: "👥"}, {label: "Messages Sent", val: stats.messagesSent, icon: "💬"}].map(s => (
+                  <div key={s.label} style={{ background: "#f8fafc", borderRadius: 12, padding: "14px", textAlign: "center" }}>
+                    <div style={{ fontSize: "1.4rem" }}>{s.icon}</div>
+                    <div style={{ fontWeight: 900, fontSize: "1.3rem", color: "#0f2144" }}>{s.val}</div>
+                    <div style={{ fontSize: "0.72rem", color: "#9ca3af", fontWeight: 600 }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Profile Fields */}
+              <div style={{ background: "#f8fafc", borderRadius: 14, padding: 18, marginBottom: 16 }}>
+                <h4 style={{ margin: "0 0 12px", color: "#0f2144", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Profile Details</h4>
+                {[{label: "Phone", val: user.profile?.phone}, {label: "Date of Birth", val: user.profile?.dateOfBirth ? new Date(user.profile.dateOfBirth).toLocaleDateString() : null}, {label: "Member Since", val: new Date(user.createdAt).toLocaleDateString()}].map(r => r.val ? (
+                  <div key={r.label} style={{ display: "flex", justifyContent: "space-between", padding: "7px 0", borderBottom: "1px solid #e2e8f0" }}>
+                    <span style={{ fontSize: "0.82rem", color: "#64748b", fontWeight: 600 }}>{r.label}</span>
+                    <span style={{ fontSize: "0.82rem", color: "#0f2144", fontWeight: 700 }}>{r.val}</span>
+                  </div>
+                ) : null)}
+              </div>
+
+              {/* Friends */}
+              {friends.length > 0 && (
+                <div style={{ marginBottom: 16 }}>
+                  <h4 style={{ margin: "0 0 10px", color: "#0f2144", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Friends ({friends.length})</h4>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {friends.slice(0, 10).map(f => (
+                      <span key={f.id} style={{ background: "#eff6ff", color: "#3b82f6", padding: "4px 12px", borderRadius: 99, fontSize: "0.78rem", fontWeight: 600 }}>{f.fullName || f.email}</span>
+                    ))}
+                    {friends.length > 10 && <span style={{ color: "#9ca3af", fontSize: "0.78rem", alignSelf: "center" }}>+{friends.length - 10} more</span>}
+                  </div>
+                </div>
+              )}
+
+              {/* Groups */}
+              {groups.length > 0 && (
+                <div>
+                  <h4 style={{ margin: "0 0 10px", color: "#0f2144", fontSize: "0.85rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Groups Joined ({groups.length})</h4>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {groups.map(g => (
+                      <span key={g.id} style={{ background: "#f0fdf4", color: "#16a34a", padding: "4px 12px", borderRadius: 99, fontSize: "0.78rem", fontWeight: 600 }}>👥 {g.name}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        })()}
+      </div>
+    </div>
+  );
+}
+
 // ─── Section: Users ───────────────────────────────────────────────────────────
 function UsersTab() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -298,7 +406,10 @@ function UsersTab() {
                   <td style={{ padding: "12px", color: "#6b7280" }}>{u.tier}</td>
                   <td style={{ padding: "12px", color: "#6b7280" }}>{new Date(u.createdAt).toLocaleDateString()}</td>
                   <td style={{ padding: "12px" }}>
-                    <button onClick={() => deleteUser(u.id)} style={{ background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: "6px", padding: "5px 10px", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}>Delete</button>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button onClick={() => setSelectedUserId(u.id)} style={{ background: "#eff6ff", color: "#3b82f6", border: "none", borderRadius: "6px", padding: "5px 10px", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}>View</button>
+                      <button onClick={() => deleteUser(u.id)} style={{ background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: "6px", padding: "5px 10px", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}>Delete</button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -306,6 +417,112 @@ function UsersTab() {
             </tbody>
           </table>
         </div>
+      )}
+      {selectedUserId && <UserDetailModal userId={selectedUserId} onClose={() => setSelectedUserId(null)} />}
+    </div>
+  );
+}
+
+// ─── Section: Groups ───────────────────────────────────────────────────────────
+function GroupsTab() {
+  const [groups, setGroups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const [form, setForm] = useState({ name: "", description: "" });
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await client.get("/groups");
+      setGroups(data.groups || []);
+    } catch (e) { console.error(e); }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const openCreate = () => {
+    setForm({ name: "", description: "" });
+    setEditItem(null);
+    setModal(true);
+  };
+
+  const openEdit = (item) => {
+    setForm({ name: item.name, description: item.description || "" });
+    setEditItem(item);
+    setModal(true);
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      if (editItem) {
+        await client.put(`/groups/${editItem.id}`, form, { headers: adminHeaders() });
+      } else {
+        await client.post("/groups", form, { headers: adminHeaders() });
+      }
+      setModal(false);
+      load();
+    } catch (e) { alert(e.response?.data?.error || "Failed to save group"); }
+    setSaving(false);
+  };
+
+  const del = async (id) => {
+    if (!confirm("Delete this group? This will remove all member enrollments.")) return;
+    try {
+      await client.delete(`/groups/${id}`, { headers: adminHeaders() });
+      load();
+    } catch (e) { alert("Failed to delete group"); }
+  };
+
+  return (
+    <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #f0f0f0" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+        <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#0f2144" }}>All Study Groups ({groups.length})</h2>
+        <button onClick={openCreate} style={{ background: "#0f2144", color: "#fff", border: "none", borderRadius: "10px", padding: "10px 18px", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", fontFamily: "inherit" }}>+ Add Group</button>
+      </div>
+
+      {loading ? <p style={{ color: "#9ca3af", textAlign: "center" }}>Loading groups...</p> : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.88rem" }}>
+            <thead>
+              <tr style={{ borderBottom: "2px solid #f1f5f9" }}>
+                {["Name", "Description", "Members", "Actions"].map(h => (
+                  <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: "0.75rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {groups.map(g => (
+                <tr key={g.id} style={{ borderBottom: "1px solid #f8fafc" }}>
+                  <td style={{ padding: "12px", fontWeight: 600, color: "#0f2144" }}>{g.name}</td>
+                  <td style={{ padding: "12px", color: "#6b7280" }}>{g.description || "No description provided."}</td>
+                  <td style={{ padding: "12px", color: "#6b7280" }}>{g._count?.enrollments ?? 0} members</td>
+                  <td style={{ padding: "12px" }}>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button onClick={() => openEdit(g)} style={{ background: "#eff6ff", color: "#3b82f6", border: "none", borderRadius: "6px", padding: "5px 10px", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}>Edit</button>
+                      <button onClick={() => del(g.id)} style={{ background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: "6px", padding: "5px 10px", cursor: "pointer", fontWeight: 600, fontSize: "0.8rem" }}>Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {groups.length === 0 && <tr><td colSpan={4} style={{ textAlign: "center", padding: "40px", color: "#9ca3af" }}>No groups found.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {modal && (
+        <Modal title={editItem ? "Edit Study Group" : "Create Study Group"} onClose={() => setModal(false)}>
+          <form onSubmit={submit}>
+            <FormInput label="Group Name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. WAEC Science Circle" required />
+            <FormInput as="textarea" label="Description" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Group description..." />
+            <SubmitBtn loading={saving} label={editItem ? "Save Changes" : "Create Group"} />
+          </form>
+        </Modal>
       )}
     </div>
   );
@@ -881,6 +1098,7 @@ export default function AdminPage() {
     switch (activeTab) {
       case "Dashboard":  return <DashboardTab stats={stats} onNav={setActiveTab} />;
       case "Users":      return <UsersTab />;
+      case "Groups":     return <GroupsTab />;
       case "Teachers":   return <TeachersTab />;
       case "Courses":    return <CoursesTab />;
       case "News":       return <NewsTab />;

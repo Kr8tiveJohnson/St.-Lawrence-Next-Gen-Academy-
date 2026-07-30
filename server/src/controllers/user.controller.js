@@ -33,7 +33,7 @@ async function updateProfile(req, res) {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { profile: true, permissionOverrides: true }
+      include: { profile: true, permissionOverrides: true, enrollments: true }
     });
 
     const safeUser = sanitizeUser(user, userId, user.role);
@@ -81,9 +81,10 @@ async function uploadPhoto(req, res) {
       return res.status(400).json({ error: 'Avatar URL is required' });
     }
 
-    const updatedProfile = await prisma.profile.update({
+    const updatedProfile = await prisma.profile.upsert({
       where: { userId },
-      data: { avatarUrl }
+      create: { userId, avatarUrl },
+      update: { avatarUrl }
     });
 
     res.status(200).json({ profile: updatedProfile });
@@ -150,11 +151,49 @@ async function updateCookieConsent(req, res) {
   }
 }
 
+/**
+ * Search users by name or email
+ */
+async function searchUsers(req, res) {
+  try {
+    const { q } = req.query;
+    const currentUserId = req.user.id;
+
+    if (!q || q.trim().length < 2) {
+      return res.status(400).json({ error: 'Search query must be at least 2 characters' });
+    }
+
+    const users = await prisma.user.findMany({
+      where: {
+        AND: [
+          { id: { not: currentUserId } },
+          { isActive: true },
+          {
+            OR: [
+              { email: { contains: q.trim(), mode: 'insensitive' } },
+              { profile: { fullName: { contains: q.trim(), mode: 'insensitive' } } },
+            ]
+          }
+        ]
+      },
+      include: { profile: true },
+      take: 20,
+    });
+
+    const safeUsers = users.map(u => sanitizeUser(u, currentUserId, req.user.role));
+    res.status(200).json({ users: safeUsers });
+  } catch (error) {
+    console.error('Search users error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   getMe,
   updateProfile,
   getUserById,
   uploadPhoto,
   updatePrivacySettings,
-  updateCookieConsent
+  updateCookieConsent,
+  searchUsers,
 };

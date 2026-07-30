@@ -207,6 +207,71 @@ async function getPayments(req, res) {
   }
 }
 
+/**
+ * Get full detail for a single user (admin only)
+ */
+async function getUserDetail(req, res) {
+  try {
+    const { id } = req.params;
+
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        profile: true,
+        enrollments: {
+          include: { group: true }
+        },
+        sentFriendships: {
+          where: { status: 'ACCEPTED' },
+          include: { receiver: { include: { profile: true } } }
+        },
+        receivedFriendships: {
+          where: { status: 'ACCEPTED' },
+          include: { requester: { include: { profile: true } } }
+        },
+        sentMessages: {
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+        },
+        permissionOverrides: true,
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Build a clean summary
+    const friends = [
+      ...user.sentFriendships.map(f => f.receiver),
+      ...user.receivedFriendships.map(f => f.requester),
+    ];
+
+    const groups = user.enrollments.map(e => e.group);
+
+    res.status(200).json({
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        tier: user.tier,
+        createdAt: user.createdAt,
+        profile: user.profile,
+      },
+      stats: {
+        friendsCount: friends.length,
+        groupsCount: groups.length,
+        messagesSent: user.sentMessages.length,
+      },
+      friends: friends.map(f => ({ id: f.id, email: f.email, fullName: f.profile?.fullName })),
+      groups: groups.map(g => ({ id: g.id, name: g.name })),
+    });
+  } catch (error) {
+    console.error('Get user detail error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 module.exports = {
   getDashboardStats,
   getAllUsers,
@@ -216,5 +281,6 @@ module.exports = {
   getAuditLogs,
   manageAdSettings,
   getAdSettings,
-  getPayments
+  getPayments,
+  getUserDetail,
 };

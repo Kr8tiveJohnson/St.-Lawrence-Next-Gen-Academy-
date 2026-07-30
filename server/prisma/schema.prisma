@@ -35,10 +35,10 @@ model User {
   bookmarks           Bookmark[]
   
   // Relations for messaging and friends
-  messagesSent     Message[] @relation("Sender")
-  messagesReceived Message[] @relation("Receiver")
-  friendRequestsSent   Friendship[] @relation("Requester")
-  friendRequestsReceived Friendship[] @relation("Receiver")
+  sentMessages     Message[] @relation("Sender")
+  receivedMessages Message[] @relation("Receiver")
+  sentFriendships   Friendship[] @relation("Requester")
+  receivedFriendships Friendship[] @relation("Receiver")
   payments             Payment[]
 }
 
@@ -184,5 +184,12 @@ model SiteContent {
   id        String   @id @default(uuid())
   key       String   @unique
   value     String
+  updatedAt DateTime @updatedAt
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

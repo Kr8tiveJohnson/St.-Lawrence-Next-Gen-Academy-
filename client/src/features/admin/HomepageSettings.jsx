@@ -14,6 +14,12 @@ export default function HomepageSettings() {
   const [exams, setExams] = useState([]);
   const [courses, setCourses] = useState([]);
   const [achievement, setAchievement] = useState({ label: '🏆 Latest Achievement', headline: '', subtext: '' });
+  
+  // Legal pages management state
+  const [activeLegalTab, setActiveLegalTab] = useState('terms'); // 'terms' | 'privacy'
+  const [termsData, setTermsData] = useState({ lastUpdated: '', sections: [] });
+  const [privacyData, setPrivacyData] = useState({ lastUpdated: '', sections: [] });
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState('');
 
@@ -22,10 +28,17 @@ export default function HomepageSettings() {
       client.get('/site-content/upcoming_exams').catch(() => ({ data: { value: [] } })),
       client.get('/site-content/trending_courses').catch(() => ({ data: { value: [] } })),
       client.get('/site-content/latest_achievement').catch(() => ({ data: { value: null } })),
-    ]).then(([examsRes, coursesRes, achievementRes]) => {
+      client.get('/site-content/terms_and_conditions').catch(() => ({ data: { value: { lastUpdated: '', sections: [] } } })),
+      client.get('/site-content/privacy_policy').catch(() => ({ data: { value: { lastUpdated: '', sections: [] } } })),
+    ]).then(([examsRes, coursesRes, achievementRes, termsRes, privacyRes]) => {
       setExams(examsRes.data.value || []);
       setCourses(coursesRes.data.value || []);
       if (achievementRes.data.value) setAchievement(achievementRes.data.value);
+      setTermsData(termsRes.data.value || { lastUpdated: '', sections: [] });
+      setPrivacyData(privacyRes.data.value || { lastUpdated: '', sections: [] });
+      setLoading(false);
+    }).catch(err => {
+      console.error(err);
       setLoading(false);
     });
   }, []);
@@ -153,6 +166,201 @@ export default function HomepageSettings() {
             {saving==='trending_courses' ? 'Saving...' : '💾 Save Courses'}
           </button>
         </div>
+      </div>
+      {/* ─── LEGAL PAGES SETTINGS ────────────────────────────────────── */}
+      <div style={sectionCard}>
+        <h3 style={sectionTitle}>📜 Legal Pages Settings</h3>
+        <p style={sectionSub}>Update the Terms &amp; Conditions and Privacy Policy pages</p>
+
+        {/* Tab Selection */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', background: '#f1f5f9', padding: '4px', borderRadius: '10px' }}>
+          <button
+            type="button"
+            onClick={() => setActiveLegalTab('terms')}
+            style={{
+              flex: 1,
+              padding: '8px 12px',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              background: activeLegalTab === 'terms' ? '#0f2144' : 'transparent',
+              color: activeLegalTab === 'terms' ? '#fff' : '#64748b',
+              transition: 'all 0.15s'
+            }}
+          >
+            Terms &amp; Conditions
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveLegalTab('privacy')}
+            style={{
+              flex: 1,
+              padding: '8px 12px',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: 700,
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              background: activeLegalTab === 'privacy' ? '#0f2144' : 'transparent',
+              color: activeLegalTab === 'privacy' ? '#fff' : '#64748b',
+              transition: 'all 0.15s'
+            }}
+          >
+            Privacy Policy
+          </button>
+        </div>
+
+        {activeLegalTab === 'terms' ? (
+          <div>
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>Last Updated Date</label>
+              <input
+                placeholder="e.g. July 29, 2026"
+                value={termsData.lastUpdated}
+                onChange={e => setTermsData({ ...termsData, lastUpdated: e.target.value })}
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ margin: '0 0 12px', fontSize: '0.9rem', color: '#0f2144', fontWeight: 700 }}>Sections</h4>
+              {termsData.sections.map((sec, idx) => (
+                <div key={idx} style={{ padding: '14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--navy)' }}>Section {idx + 1}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = termsData.sections.filter((_, sIdx) => sIdx !== idx).map((s, i) => ({ ...s, id: i + 1 }));
+                        setTermsData({ ...termsData, sections: updated });
+                      }}
+                      style={btnDanger}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <input
+                    placeholder="Section Title"
+                    value={sec.title}
+                    onChange={e => {
+                      const updated = [...termsData.sections];
+                      updated[idx].title = e.target.value;
+                      setTermsData({ ...termsData, sections: updated });
+                    }}
+                    style={{ ...inputStyle, marginBottom: '8px' }}
+                  />
+                  <textarea
+                    placeholder="Section Content / Body text"
+                    value={sec.body}
+                    onChange={e => {
+                      const updated = [...termsData.sections];
+                      updated[idx].body = e.target.value;
+                      setTermsData({ ...termsData, sections: updated });
+                    }}
+                    rows={4}
+                    style={{ ...inputStyle, marginBottom: 0, resize: 'vertical' }}
+                  />
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newId = termsData.sections.length + 1;
+                    setTermsData({ ...termsData, sections: [...termsData.sections, { id: newId, title: '', body: '' }] });
+                  }}
+                  style={btnSecondary}
+                >
+                  + Add Section
+                </button>
+                <button
+                  type="button"
+                  onClick={() => saveContent('terms_and_conditions', termsData, 'Terms & Conditions')}
+                  disabled={saving === 'terms_and_conditions'}
+                  style={btnPrimary}
+                >
+                  {saving === 'terms_and_conditions' ? 'Saving...' : '💾 Save Terms & Conditions'}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: '4px', textTransform: 'uppercase' }}>Last Updated Date</label>
+              <input
+                placeholder="e.g. July 29, 2026"
+                value={privacyData.lastUpdated}
+                onChange={e => setPrivacyData({ ...privacyData, lastUpdated: e.target.value })}
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <h4 style={{ margin: '0 0 12px', fontSize: '0.9rem', color: '#0f2144', fontWeight: 700 }}>Sections</h4>
+              {privacyData.sections.map((sec, idx) => (
+                <div key={idx} style={{ padding: '14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--navy)' }}>Section {idx + 1}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = privacyData.sections.filter((_, sIdx) => sIdx !== idx).map((s, i) => ({ ...s, id: i + 1 }));
+                        setPrivacyData({ ...privacyData, sections: updated });
+                      }}
+                      style={btnDanger}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <input
+                    placeholder="Section Title"
+                    value={sec.title}
+                    onChange={e => {
+                      const updated = [...privacyData.sections];
+                      updated[idx].title = e.target.value;
+                      setPrivacyData({ ...privacyData, sections: updated });
+                    }}
+                    style={{ ...inputStyle, marginBottom: '8px' }}
+                  />
+                  <textarea
+                    placeholder="Section Content / Body text"
+                    value={sec.body}
+                    onChange={e => {
+                      const updated = [...privacyData.sections];
+                      updated[idx].body = e.target.value;
+                      setPrivacyData({ ...privacyData, sections: updated });
+                    }}
+                    rows={4}
+                    style={{ ...inputStyle, marginBottom: 0, resize: 'vertical' }}
+                  />
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: '10px', marginTop: '14px' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newId = privacyData.sections.length + 1;
+                    setPrivacyData({ ...privacyData, sections: [...privacyData.sections, { id: newId, title: '', body: '' }] });
+                  }}
+                  style={btnSecondary}
+                >
+                  + Add Section
+                </button>
+                <button
+                  type="button"
+                  onClick={() => saveContent('privacy_policy', privacyData, 'Privacy Policy')}
+                  disabled={saving === 'privacy_policy'}
+                  style={btnPrimary}
+                >
+                  {saving === 'privacy_policy' ? 'Saving...' : '💾 Save Privacy Policy'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

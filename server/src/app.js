@@ -14,6 +14,7 @@ const adminRoutes = require('./routes/admin.routes');
 const paymentRoutes = require('./routes/payment.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
 const siteContentRoutes = require('./routes/siteContent.routes');
+const newsletterRoutes = require('./routes/newsletter.routes');
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/site-content', siteContentRoutes);
+app.use('/api/newsletter', newsletterRoutes);
 
 // Root route
 app.get('/', (req, res) => {

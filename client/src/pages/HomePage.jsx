@@ -4,6 +4,49 @@ import logoImg from "../assets/St. Lawrence Next Gen Academy logo.png";
 import TimeWeatherWidget from "../components/common/TimeWeatherWidget.jsx";
 import client from "../api/client";
 
+function NewsletterForm() {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState(null); // null | "success" | "error"
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email.includes("@")) return;
+    setLoading(true);
+    try {
+      await client.post("/newsletter/subscribe", { email });
+      setStatus("success");
+      setEmail("");
+    } catch {
+      setStatus("error");
+    }
+    setLoading(false);
+    setTimeout(() => setStatus(null), 4000);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{ display: "flex", gap: 10, maxWidth: 480, marginInline: "auto", flexWrap: "wrap" }}>
+      <input
+        type="email"
+        value={email}
+        onChange={e => setEmail(e.target.value)}
+        required
+        placeholder="Enter your email address..."
+        style={{ flex: 1, minWidth: 200, padding: "14px 18px", borderRadius: 12, border: "1px solid var(--border)", fontSize: "0.95rem", fontFamily: "inherit", outline: "none", background: "#fff" }}
+      />
+      <button
+        type="submit"
+        disabled={loading}
+        style={{ padding: "14px 24px", background: "var(--navy)", color: "#fff", border: "none", borderRadius: 12, fontWeight: 800, fontSize: "0.9rem", cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit", opacity: loading ? 0.7 : 1, whiteSpace: "nowrap" }}
+      >
+        {loading ? "Subscribing..." : "Subscribe →"}
+      </button>
+      {status === "success" && <p style={{ width: "100%", textAlign: "center", color: "#10b981", fontWeight: 700, fontSize: "0.9rem", margin: 0 }}>✅ You're subscribed! Welcome aboard.</p>}
+      {status === "error"   && <p style={{ width: "100%", textAlign: "center", color: "#ef4444", fontWeight: 700, fontSize: "0.9rem", margin: 0 }}>❌ Something went wrong. Please try again.</p>}
+    </form>
+  );
+}
+
 function AnimatedCounter({ value, suffix = "+" }) {
   const [count, setCount] = useState(0);
   const [hasAnimated, setHasAnimated] = useState(false);
@@ -840,6 +883,25 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── NEWSLETTER SECTION ────────────────────────────── */}
+      <section style={{ background: "var(--off-white)", padding: "72px 0", borderTop: "1px solid var(--border)" }}>
+        <div className="wrap" style={{ maxWidth: 680, textAlign: "center" }}>
+          <div className="hero-chip" style={{ marginBottom: 16, display: "inline-flex" }}>
+            <span className="chip-dot" /> Stay Informed
+          </div>
+          <h2 style={{ fontFamily: "var(--font-h)", fontSize: "clamp(1.8rem, 4vw, 2.6rem)", fontWeight: 900, color: "var(--navy)", marginBottom: 12 }}>
+            Get Academy Updates in Your Inbox
+          </h2>
+          <p style={{ color: "var(--text-2)", fontSize: "1rem", lineHeight: 1.7, marginBottom: 32, maxWidth: 520, marginInline: "auto" }}>
+            Subscribe for news on new courses, exam prep tips, holiday schedules, and student success stories — delivered straight to you.
+          </p>
+          <NewsletterForm />
+          <p style={{ fontSize: "0.78rem", color: "var(--text-3)", marginTop: 14 }}>
+            No spam. Unsubscribe anytime. Your data is safe with us.
+          </p>
+        </div>
+      </section>
+
       <footer className="footer portal-footer">
         <div className="wrap footer-portal-grid">
           <div className="footer-brand-block">
@@ -877,6 +939,14 @@ export default function HomePage() {
               <a href="mailto:info@stlawrencenextgen.edu">
                 info@stlawrencenextgen.edu
               </a>
+            </div>
+          </div>
+
+          <div>
+            <h4>Legal</h4>
+            <div className="footer-link-stack">
+              <Link to="/terms">Terms &amp; Conditions</Link>
+              <Link to="/privacy">Privacy Policy</Link>
             </div>
           </div>
         </div>

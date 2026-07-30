@@ -1,8 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import logoImg from '../assets/St. Lawrence Next Gen Academy logo.png';
+import client from '../api/client';
 
 export default function PrivacyPage() {
+  const [privacy, setPrivacy] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    client.get('/site-content/privacy_policy')
+      .then(res => {
+        setPrivacy(res.data.value);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to fetch privacy policy:', err);
+        setLoading(false);
+      });
+  }, []);
+
   return (
     <div style={{ minHeight: '100vh', background: 'var(--off-white)', display: 'flex', flexDirection: 'column' }}>
       <nav className="nav internal-page-nav" style={{ padding: 0 }}>
@@ -24,27 +40,84 @@ export default function PrivacyPage() {
 
       <div style={{ flex: 1, padding: '60px 20px' }}>
         <div style={{ maxWidth: '800px', margin: '0 auto', background: 'var(--white)', padding: '50px', borderRadius: '24px', boxShadow: '0 10px 40px rgba(0,0,0,0.05)' }}>
-          <h1 style={{ fontFamily: 'var(--font-h)', fontSize: '2.5rem', color: 'var(--navy)', marginBottom: '20px' }}>Privacy Policy</h1>
-          <p style={{ color: 'var(--text-3)', marginBottom: '30px', fontSize: '0.9rem' }}>Last Updated: {new Date().toLocaleDateString()}</p>
+          <h1 style={{ fontFamily: 'var(--font-h)', fontSize: '2.5rem', color: 'var(--navy)', marginBottom: '10px' }}>Privacy Policy</h1>
           
-          <div style={{ color: 'var(--text-2)', lineHeight: 1.8 }}>
-            <h3 style={{ color: 'var(--navy)', marginTop: '30px' }}>1. Data Collection</h3>
-            <p>We collect information you provide during registration, including your name, email, and learning preferences. We also collect usage data to improve our platform.</p>
-
-            <h3 style={{ color: 'var(--navy)', marginTop: '30px' }}>2. How We Use Your Data</h3>
-            <p>Your data is used to personalize your learning experience, provide customer support, and communicate important updates regarding the academy.</p>
-
-            <h3 style={{ color: 'var(--navy)', marginTop: '30px' }}>3. Cookies</h3>
-            <p>We use cookies to keep you logged in and track your session. You can manage your cookie preferences through the banner on our homepage or your browser settings.</p>
-
-            <h3 style={{ color: 'var(--navy)', marginTop: '30px' }}>4. Data Protection</h3>
-            <p>We implement industry-standard security measures to protect your personal information from unauthorized access.</p>
-
-            <h3 style={{ color: 'var(--navy)', marginTop: '30px' }}>5. Third-Party Sharing</h3>
-            <p>We do not sell your data. We may share necessary data with trusted service providers (like payment processors) strictly for fulfilling our services.</p>
-          </div>
+          {loading ? (
+            <div style={{ color: 'var(--text-3)', padding: '40px 0', textAlign: 'center' }}>
+              <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>🔄</div>
+              Loading privacy policy...
+            </div>
+          ) : privacy ? (
+            <>
+              <p style={{ color: 'var(--text-3)', marginBottom: '30px', fontSize: '0.9rem' }}>Last Updated: {privacy.lastUpdated}</p>
+              
+              <div style={{ color: 'var(--text-2)', lineHeight: 1.8 }}>
+                {privacy.sections.map((section) => (
+                  <div key={section.id} style={{ marginBottom: '30px' }}>
+                    <h3 style={{ color: 'var(--navy)', marginTop: '24px', fontSize: '1.15rem', fontFamily: 'var(--font-h)' }}>
+                      {section.id}. {section.title}
+                    </h3>
+                    <p style={{ whiteSpace: 'pre-line', fontSize: '0.95rem' }}>{section.body}</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div style={{ color: '#ef4444', padding: '40px 0', textAlign: 'center' }}>
+              ⚠️ Failed to load privacy policy. Please try again later.
+            </div>
+          )}
         </div>
       </div>
+
+      <footer className="footer portal-footer">
+        <div className="wrap footer-portal-grid">
+          <div className="footer-brand-block">
+            <div className="nav-logo" style={{ marginBottom: 14 }}>
+              <img src={logoImg} alt="St. Lawrence Next Gen Academy" className="nav-logo-img" />
+              <div>
+                <div className="nav-brand-name" style={{ color: "white" }}>
+                  ST. LAWRENCE
+                </div>
+                <div className="nav-brand-sub">NEXT GEN ACADEMY</div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4>Quick Links</h4>
+            <div className="footer-link-stack">
+              <Link to="/past-questions">Past Questions</Link>
+              <Link to="/classrooms">Courses</Link>
+            </div>
+          </div>
+
+          <div>
+            <h4>Account</h4>
+            <div className="footer-link-stack">
+              <Link to="/login">Sign In</Link>
+              <Link to="/register">Register</Link>
+            </div>
+          </div>
+
+          <div>
+            <h4>Support</h4>
+            <div className="footer-link-stack">
+              <a href="mailto:info@stlawrencenextgen.edu">
+                info@stlawrencenextgen.edu
+              </a>
+            </div>
+          </div>
+
+          <div>
+            <h4>Legal</h4>
+            <div className="footer-link-stack">
+              <Link to="/terms">Terms &amp; Conditions</Link>
+              <Link to="/privacy">Privacy Policy</Link>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

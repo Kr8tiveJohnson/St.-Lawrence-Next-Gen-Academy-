@@ -21,6 +21,9 @@ router.put('/me/privacy', userController.updatePrivacySettings);
 // Update cookie consent
 router.put('/me/cookies', userController.updateCookieConsent);
 
+// Search users by name or email (must come BEFORE /:id)
+router.get('/search', userController.searchUsers);
+
 // Get user by ID (with privacy controls)
 router.get('/:id', userController.getUserById);
 

@@ -25,7 +25,7 @@ async function authMiddleware(req, res, next) {
   try {
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
-      include: { profile: true, permissionOverrides: true }
+      include: { profile: true, permissionOverrides: true, enrollments: true }
     });
 
     if (!user) {

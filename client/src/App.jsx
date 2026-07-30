@@ -16,6 +16,7 @@ import NotFoundPage from "./pages/NotFoundPage.jsx";
 import TermsPage from "./pages/TermsPage.jsx";
 import PrivacyPage from "./pages/PrivacyPage.jsx";
 import PrivacyNotice from "./components/common/PrivacyNotice.jsx";
+import HolidayPopup from "./components/common/HolidayPopup.jsx";
 
 export default function App() {
   return (
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
         <PrivacyNotice />
+        <HolidayPopup />
       </BrowserRouter>
     </AuthProvider>
   );

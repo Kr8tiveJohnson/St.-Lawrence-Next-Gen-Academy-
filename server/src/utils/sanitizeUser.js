@@ -5,4 +5,4 @@ const sanitizeUser = (user) => {
     return safeUser;
 };
 
-module.exports = { sanitizeUser };
+module.exports = sanitizeUser;

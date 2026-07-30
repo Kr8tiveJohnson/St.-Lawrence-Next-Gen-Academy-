@@ -1,26 +1,28 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logoImg from "../assets/St. Lawrence Next Gen Academy logo.png";
+import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-
-    setTimeout(() => {
-      localStorage.setItem("sl_token", "demo_token_123");
-      const user = JSON.parse(localStorage.getItem("sl_user")) || {
-        firstName: "Student",
-        role: "Student",
-      };
-      localStorage.setItem("sl_user", JSON.stringify(user));
+    setError("");
+    try {
+      await login(email, password);
       navigate("/profile");
-    }, 1200);
+    } catch (err) {
+      setError(err?.response?.data?.error || "Invalid email or password. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -268,6 +270,16 @@ export default function LoginPage() {
                   placeholder="••••••••"
                 />
               </div>
+
+              {error && (
+                <div style={{
+                  background: "#fee2e2", color: "#dc2626", padding: "12px 16px",
+                  borderRadius: 12, fontSize: "0.88rem", fontWeight: 600,
+                  marginBottom: 16, border: "1px solid #fecaca"
+                }}>
+                  ❌ {error}
+                </div>
+              )}
 
               <button
                 type="submit"
