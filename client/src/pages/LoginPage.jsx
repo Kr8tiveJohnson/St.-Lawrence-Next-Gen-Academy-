@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import logoImg from "../assets/St. Lawrence Next Gen Academy logo.png";
 import { useAuth } from "../context/AuthContext";
 
@@ -9,7 +9,12 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
+
+  // Support ?redirect=/cbt (or any path) so users are returned to where they came from
+  const params = new URLSearchParams(location.search);
+  const redirectTo = params.get("redirect") || "/profile";
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -17,7 +22,7 @@ export default function LoginPage() {
     setError("");
     try {
       await login(email, password);
-      navigate("/profile");
+      navigate(redirectTo);
     } catch (err) {
       setError(err?.response?.data?.error || "Invalid email or password. Please try again.");
     } finally {

@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import client from "../api/client";
 import logoImg from "../assets/St. Lawrence Next Gen Academy logo.png";
+import SchoolDashboardView from "../components/dashboard/SchoolDashboardView";
+import StudentDashboardView from "../components/dashboard/StudentDashboardView";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function getInitials(name = "") {
@@ -41,16 +43,1173 @@ function Toast({ msg, type = "success" }) {
   );
 }
 
-// ─── Sub-tabs for Friends ─────────────────────────────────────────────────────
+// ─── STUDENT: LEARNING PROGRESS TAB ──────────────────────────────────────────
+function ProgressTab() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    client.get("/progress/me")
+      .then((res) => setData(res.data))
+      .catch((err) => console.error("progress error:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return <div style={{ textAlign: "center", padding: 40, color: "var(--text-3)" }}>Calculating student progress...</div>;
+  }
+
+  if (!data) {
+    return <div style={{ textAlign: "center", padding: 40, color: "var(--text-3)" }}>Could not load progress data.</div>;
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div>
+        <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.3rem", fontWeight: 900, color: "var(--navy)", margin: "0 0 6px" }}>
+          📊 Academic Progress & Mastery
+        </h3>
+        <p style={{ color: "var(--text-2)", fontSize: "0.88rem", margin: 0 }}>
+          Real-time tracking based on completed lessons, quiz scores, and CBT mock exam attempts.
+        </p>
+      </div>
+
+      {/* Top Metric Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14 }}>
+        <div className="dash-card" style={{ padding: "20px" }}>
+          <div style={{ fontSize: "1.8rem", marginBottom: 6 }}>⏱️</div>
+          <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "var(--navy)" }}>{data.totalTestsTaken}</div>
+          <div style={{ fontSize: "0.82rem", color: "var(--text-3)", fontWeight: 700 }}>CBT Exams Completed</div>
+        </div>
+
+        <div className="dash-card" style={{ padding: "20px" }}>
+          <div style={{ fontSize: "1.8rem", marginBottom: 6 }}>📖</div>
+          <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "var(--gold)" }}>{data.totalCompletedLessons}</div>
+          <div style={{ fontSize: "0.82rem", color: "var(--text-3)", fontWeight: 700 }}>Lessons Completed</div>
+        </div>
+
+        <div className="dash-card" style={{ padding: "20px" }}>
+          <div style={{ fontSize: "1.8rem", marginBottom: 6 }}>🎯</div>
+          <div style={{ fontSize: "1.8rem", fontWeight: 900, color: "#16a34a" }}>
+            {data.strongSubjects?.length || 0}
+          </div>
+          <div style={{ fontSize: "0.82rem", color: "var(--text-3)", fontWeight: 700 }}>Strong Subjects</div>
+        </div>
+      </div>
+
+      {/* Subject-by-Subject Mastery Bars */}
+      <div className="dash-card" style={{ padding: "28px" }}>
+        <h4 style={{ fontFamily: "var(--font-h)", fontSize: "1.1rem", fontWeight: 800, color: "var(--navy)", margin: "0 0 18px" }}>
+          Subject Mastery Breakdown
+        </h4>
+
+        {(!data.subjectProgress || data.subjectProgress.length === 0) ? (
+          <div style={{ textAlign: "center", padding: "24px", color: "var(--text-3)" }}>
+            No subject activity recorded yet. Take your first <Link to="/cbt" style={{ color: "var(--navy)", fontWeight: 700 }}>CBT Exam</Link> to start tracking!
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            {data.subjectProgress.map((item) => (
+              <div key={item.subject}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <span style={{ fontWeight: 800, color: "var(--navy)", fontSize: "0.92rem" }}>
+                    {item.subject}
+                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>
+                      Avg CBT: <strong>{typeof item.avgCbtScore === "number" ? `${item.avgCbtScore}%` : item.avgCbtScore}</strong>
+                    </span>
+                    <span style={{
+                      fontWeight: 900,
+                      fontSize: "0.9rem",
+                      color: item.masteryPercent >= 70 ? "#16a34a" : item.masteryPercent >= 50 ? "#d97706" : "#dc2626"
+                    }}>
+                      {item.masteryPercent}%
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ height: 10, background: "#f1f5f9", borderRadius: 99, overflow: "hidden" }}>
+                  <div style={{
+                    height: "100%",
+                    width: `${Math.min(100, Math.max(0, item.masteryPercent))}%`,
+                    borderRadius: 99,
+                    background: item.masteryPercent >= 70
+                      ? "linear-gradient(90deg, #16a34a, #22c55e)"
+                      : item.masteryPercent >= 50
+                        ? "linear-gradient(90deg, #d97706, #f59e0b)"
+                        : "linear-gradient(90deg, #dc2626, #ef4444)",
+                    transition: "width 0.6s ease"
+                  }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Strong & Weak Areas Highlight */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+        <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 16, padding: "20px" }}>
+          <div style={{ fontWeight: 800, color: "#166534", fontSize: "0.92rem", marginBottom: 6 }}>
+            💪 Strong Performance Areas:
+          </div>
+          <div style={{ color: "#15803d", fontSize: "0.85rem", lineHeight: 1.5 }}>
+            {data.strongSubjects?.length > 0
+              ? data.strongSubjects.join(", ")
+              : "Keep practicing tests to identify your highest-scoring subjects."}
+          </div>
+        </div>
+
+        <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 16, padding: "20px" }}>
+          <div style={{ fontWeight: 800, color: "#991b1b", fontSize: "0.92rem", marginBottom: 6 }}>
+            🎯 Areas Needing Targeted Practice:
+          </div>
+          <div style={{ color: "#b91c1c", fontSize: "0.85rem", lineHeight: 1.5 }}>
+            {data.weakSubjects?.length > 0
+              ? data.weakSubjects.join(", ")
+              : "Great job! All active subjects are above the 60% mastery threshold."}
+          </div>
+        </div>
+      </div>
+
+      {/* Targeted Recommendations From Database */}
+      {data.recommendedTips?.length > 0 && (
+        <div className="dash-card" style={{ padding: "24px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <h4 style={{ fontFamily: "var(--font-h)", fontSize: "1.05rem", fontWeight: 800, color: "var(--navy)", margin: 0 }}>
+              💡 Recommended TIPS for Your Focus Areas
+            </h4>
+            <Link to="/tips" style={{ fontSize: "0.8rem", color: "var(--navy)", fontWeight: 700 }}>
+              View All TIPS →
+            </Link>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14 }}>
+            {data.recommendedTips.map((tip) => (
+              <div key={tip.id} style={{ background: "#f8fafc", padding: "16px", borderRadius: 14, border: "1px solid var(--border)" }}>
+                <span style={{ fontSize: "0.72rem", background: "var(--gold-dim)", color: "var(--navy)", padding: "2px 8px", borderRadius: 6, fontWeight: 800 }}>
+                  {tip.subject}
+                </span>
+                <div style={{ fontWeight: 800, color: "var(--navy)", fontSize: "0.92rem", margin: "8px 0 4px" }}>
+                  {tip.title}
+                </div>
+                <div style={{ fontSize: "0.82rem", color: "var(--text-2)", lineHeight: 1.4, marginBottom: 10 }}>
+                  {tip.keyIdea}
+                </div>
+                <Link to="/tips" style={{ fontSize: "0.78rem", fontWeight: 800, color: "var(--navy)" }}>
+                  Review Memory Trick →
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── STUDENT: CBT TEST HISTORY TAB ────────────────────────────────────────────
+function CbtHistoryTab() {
+  const [attempts, setAttempts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    client.get("/cbt/attempts/me")
+      .then((res) => setAttempts(res.data.attempts || []))
+      .catch((err) => console.error("cbt attempts error:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.3rem", fontWeight: 900, color: "var(--navy)", margin: "0 0 4px" }}>
+            ⏱️ CBT Examination History
+          </h3>
+          <p style={{ color: "var(--text-2)", fontSize: "0.88rem", margin: 0 }}>
+            Review past scores, time used, and performance metrics across examinations.
+          </p>
+        </div>
+        <Link to="/cbt" style={{ padding: "10px 18px", background: "var(--navy)", color: "#ffffff", borderRadius: 10, textDecoration: "none", fontWeight: 800, fontSize: "0.85rem" }}>
+          + Take New CBT Test
+        </Link>
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: "center", padding: 40, color: "var(--text-3)" }}>Loading test attempts...</div>
+      ) : attempts.length === 0 ? (
+        <div className="dash-card" style={{ textAlign: "center", padding: "48px 24px", color: "var(--text-3)" }}>
+          <div style={{ fontSize: "3rem", marginBottom: 12 }}>📝</div>
+          <h4 style={{ fontFamily: "var(--font-h)", color: "var(--navy)", margin: "0 0 8px" }}>No CBT Tests Taken Yet</h4>
+          <p style={{ fontSize: "0.9rem", color: "var(--text-2)", margin: "0 0 20px" }}>
+            Put your knowledge to the test with our timed JAMB and WAEC exam practice engine.
+          </p>
+          <Link to="/cbt" style={{ display: "inline-block", padding: "10px 22px", background: "var(--navy)", color: "#ffffff", borderRadius: 10, textDecoration: "none", fontWeight: 800, fontSize: "0.88rem" }}>
+            Start First CBT Drill →
+          </Link>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {attempts.map((att) => {
+            const formattedDate = new Date(att.createdAt).toLocaleDateString("en-NG", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit"
+            });
+            const mins = Math.floor(att.timeSpentSeconds / 60);
+            const secs = att.timeSpentSeconds % 60;
+
+            return (
+              <div key={att.id} className="dash-card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", flexWrap: "wrap", gap: 14 }}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <span style={{ background: "rgba(16,28,68,0.06)", color: "var(--navy)", padding: "2px 8px", borderRadius: 6, fontSize: "0.72rem", fontWeight: 800 }}>
+                      {att.examType}
+                    </span>
+                    <span style={{ fontWeight: 800, color: "var(--navy)", fontSize: "1rem" }}>
+                      {att.subject}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>
+                    {formattedDate} · Time used: {mins}m {secs}s
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: "1.25rem", fontWeight: 900, color: att.percentage >= 60 ? "#16a34a" : "#dc2626" }}>
+                      {att.score} / {att.totalQuestions}
+                    </div>
+                    <div style={{ fontSize: "0.78rem", fontWeight: 800, color: "var(--text-3)" }}>
+                      {att.percentage}%
+                    </div>
+                  </div>
+
+                  <span style={{
+                    padding: "6px 12px",
+                    borderRadius: 20,
+                    fontSize: "0.76rem",
+                    fontWeight: 800,
+                    background: att.percentage >= 75 ? "#dcfce7" : att.percentage >= 50 ? "#fef3c7" : "#fee2e2",
+                    color: att.percentage >= 75 ? "#15803d" : att.percentage >= 50 ? "#b45309" : "#b91c1c"
+                  }}>
+                    {att.percentage >= 75 ? "Distinction" : att.percentage >= 50 ? "Credit" : "Review"}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── STUDENT: ASSIGNMENTS TAB ─────────────────────────────────────────────────
+function StudentAssignmentsTab() {
+  const [assignments, setAssignments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [submitModal, setSubmitModal] = useState(null); // assignment object
+  const [submissionText, setSubmissionText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  const notify = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const loadAssignments = useCallback(async () => {
+    try {
+      const res = await client.get("/assignments");
+      setAssignments(res.data.assignments || []);
+    } catch (err) {
+      console.error("loadAssignments error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAssignments();
+  }, [loadAssignments]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!submitModal) return;
+    setSubmitting(true);
+
+    try {
+      await client.post(`/assignments/${submitModal.id}/submit`, {
+        submissionText,
+      });
+      notify("Assignment submitted successfully! 🎉");
+      setSubmitModal(null);
+      setSubmissionText("");
+      loadAssignments();
+    } catch (err) {
+      notify(err.response?.data?.error || "Failed to submit assignment.", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div>
+      {toast && <Toast msg={toast.msg} type={toast.type} />}
+
+      <div style={{ marginBottom: 20 }}>
+        <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.3rem", fontWeight: 900, color: "var(--navy)", margin: "0 0 4px" }}>
+          📝 Homework & Assignments
+        </h3>
+        <p style={{ color: "var(--text-2)", fontSize: "0.88rem", margin: 0 }}>
+          View tasks assigned by academy teachers, submit your answers, and check instructor marks.
+        </p>
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: "center", padding: 40, color: "var(--text-3)" }}>Loading assignments...</div>
+      ) : assignments.length === 0 ? (
+        <div className="dash-card" style={{ textAlign: "center", padding: "40px", color: "var(--text-3)" }}>
+          <div style={{ fontSize: "2.8rem", marginBottom: 10 }}>📄</div>
+          <p style={{ fontWeight: 600, margin: 0 }}>No assignments currently active.</p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {assignments.map((item) => {
+            const mySub = item.submissions?.[0] || null;
+            const isGraded = mySub?.status === "GRADED";
+            const isSubmitted = mySub?.status === "SUBMITTED" || isGraded;
+
+            return (
+              <div key={item.id} className="dash-card" style={{ padding: "24px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10, flexWrap: "wrap", gap: 10 }}>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <span style={{ background: "rgba(16,28,68,0.06)", color: "var(--navy)", padding: "2px 8px", borderRadius: 6, fontSize: "0.72rem", fontWeight: 800 }}>
+                        {item.subject}
+                      </span>
+                      <span style={{ fontSize: "0.76rem", color: "var(--text-3)", fontWeight: 700 }}>
+                        Target: {item.targetClass}
+                      </span>
+                    </div>
+                    <h4 style={{ fontFamily: "var(--font-h)", fontSize: "1.1rem", fontWeight: 800, color: "var(--navy)", margin: 0 }}>
+                      {item.title}
+                    </h4>
+                  </div>
+
+                  <span style={{
+                    padding: "4px 12px",
+                    borderRadius: 20,
+                    fontSize: "0.76rem",
+                    fontWeight: 800,
+                    background: isGraded ? "#dcfce7" : isSubmitted ? "#fef3c7" : "#fee2e2",
+                    color: isGraded ? "#15803d" : isSubmitted ? "#b45309" : "#b91c1c"
+                  }}>
+                    {isGraded ? `Graded: ${mySub.score}/100` : isSubmitted ? "Submitted (Pending Grading)" : "Pending Submission"}
+                  </span>
+                </div>
+
+                <p style={{ fontSize: "0.88rem", color: "var(--text-2)", lineHeight: 1.6, margin: "0 0 16px" }}>
+                  {item.description}
+                </p>
+
+                {/* Due Date & Action */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--border)", paddingTop: 14 }}>
+                  <span style={{ fontSize: "0.78rem", color: "var(--text-3)", fontWeight: 600 }}>
+                    {item.dueDate ? `Due Date: ${new Date(item.dueDate).toLocaleDateString("en-NG")}` : "No specific deadline"}
+                  </span>
+
+                  <button
+                    onClick={() => { setSubmitModal(item); setSubmissionText(mySub?.submissionText || ""); }}
+                    style={{
+                      padding: "8px 16px",
+                      background: "var(--navy)",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: 8,
+                      fontWeight: 700,
+                      fontSize: "0.82rem",
+                      cursor: "pointer"
+                    }}
+                  >
+                    {isSubmitted ? "Edit / View Submission" : "Submit Answer →"}
+                  </button>
+                </div>
+
+                {/* Teacher Feedback if Graded */}
+                {isGraded && mySub.feedback && (
+                  <div style={{ marginTop: 14, background: "#f0fdf4", borderLeft: "4px solid #16a34a", padding: "10px 14px", borderRadius: 8 }}>
+                    <div style={{ fontSize: "0.74rem", fontWeight: 800, textTransform: "uppercase", color: "#166534", marginBottom: 2 }}>
+                      Teacher Feedback:
+                    </div>
+                    <div style={{ fontSize: "0.82rem", color: "#15803d" }}>
+                      {mySub.feedback}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Submission Modal */}
+      {submitModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: "#ffffff", borderRadius: 20, padding: 30, maxWidth: 540, width: "100%", boxShadow: "0 20px 40px rgba(0,0,0,0.2)" }}>
+            <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.2rem", fontWeight: 800, color: "var(--navy)", margin: "0 0 10px" }}>
+              Submit: {submitModal.title}
+            </h3>
+            <p style={{ color: "var(--text-2)", fontSize: "0.85rem", margin: "0 0 16px" }}>
+              Enter your written solution, essay, or link to your work:
+            </p>
+
+            <form onSubmit={handleSubmit}>
+              <textarea
+                required
+                rows={6}
+                value={submissionText}
+                onChange={(e) => setSubmissionText(e.target.value)}
+                placeholder="Type your answer, working, or shared document link..."
+                style={{ width: "100%", padding: "12px", borderRadius: 10, border: "1px solid var(--border)", fontSize: "0.9rem", resize: "vertical", boxSizing: "border-box", marginBottom: 18 }}
+              />
+
+              <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+                <button
+                  type="button"
+                  onClick={() => setSubmitModal(null)}
+                  style={{ padding: "10px 18px", borderRadius: 8, border: "1px solid var(--border)", background: "#ffffff", fontWeight: 700, cursor: "pointer" }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  style={{ padding: "10px 20px", borderRadius: 8, border: "none", background: "var(--navy)", color: "#ffffff", fontWeight: 800, cursor: "pointer" }}
+                >
+                  {submitting ? "Submitting..." : "Submit to Teacher"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── TEACHER: ASSIGNMENTS MANAGER TAB ─────────────────────────────────────────
+function TeacherAssignmentsTab() {
+  const [assignments, setAssignments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [viewSubmissions, setViewSubmissions] = useState(null); // assignment object
+  const [submissionsList, setSubmissionsList] = useState([]);
+  const [gradeModal, setGradeModal] = useState(null); // submission object
+  const [gradeScore, setGradeScore] = useState("");
+  const [gradeFeedback, setGradeFeedback] = useState("");
+  const [toast, setToast] = useState(null);
+
+  const [newForm, setNewForm] = useState({
+    title: "",
+    subject: "Mathematics",
+    targetClass: "SSS 3",
+    description: "",
+    dueDate: ""
+  });
+
+  const notify = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const loadAssignments = useCallback(async () => {
+    try {
+      const res = await client.get("/assignments");
+      setAssignments(res.data.assignments || []);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadAssignments(); }, [loadAssignments]);
+
+  const handleCreateAssignment = async (e) => {
+    e.preventDefault();
+    try {
+      await client.post("/assignments", newForm);
+      notify("Assignment created successfully! 🎉");
+      setShowCreate(false);
+      setNewForm({ title: "", subject: "Mathematics", targetClass: "SSS 3", description: "", dueDate: "" });
+      loadAssignments();
+    } catch (err) {
+      notify(err.response?.data?.error || "Failed to create assignment", "error");
+    }
+  };
+
+  const handleOpenSubmissions = async (assignment) => {
+    setViewSubmissions(assignment);
+    try {
+      const res = await client.get(`/assignments/${assignment.id}/submissions`);
+      setSubmissionsList(res.data.submissions || []);
+    } catch {
+      setSubmissionsList([]);
+    }
+  };
+
+  const handleSaveGrade = async (e) => {
+    e.preventDefault();
+    if (!gradeModal) return;
+
+    try {
+      await client.put(`/assignments/submissions/${gradeModal.id}/grade`, {
+        score: gradeScore,
+        feedback: gradeFeedback
+      });
+      notify("Grade and feedback saved! ✓");
+      setGradeModal(null);
+      setGradeScore("");
+      setGradeFeedback("");
+      if (viewSubmissions) handleOpenSubmissions(viewSubmissions);
+    } catch {
+      notify("Failed to save grade", "error");
+    }
+  };
+
+  return (
+    <div>
+      {toast && <Toast msg={toast.msg} type={toast.type} />}
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.3rem", fontWeight: 900, color: "var(--navy)", margin: "0 0 4px" }}>
+            📋 Teacher Assignments Manager
+          </h3>
+          <p style={{ color: "var(--text-2)", fontSize: "0.88rem", margin: 0 }}>
+            Create tasks, review student submissions, and assign scores with personal remarks.
+          </p>
+        </div>
+
+        <button
+          onClick={() => setShowCreate(!showCreate)}
+          style={{ padding: "10px 18px", background: "var(--navy)", color: "#ffffff", borderRadius: 10, border: "none", fontWeight: 800, fontSize: "0.85rem", cursor: "pointer" }}
+        >
+          {showCreate ? "Cancel" : "+ Create New Assignment"}
+        </button>
+      </div>
+
+      {/* Create Assignment Form */}
+      {showCreate && (
+        <div className="dash-card" style={{ padding: "28px", marginBottom: 24 }}>
+          <h4 style={{ fontFamily: "var(--font-h)", fontSize: "1.1rem", fontWeight: 800, color: "var(--navy)", margin: "0 0 16px" }}>
+            Publish New Assignment
+          </h4>
+          <form onSubmit={handleCreateAssignment} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--navy)", marginBottom: 6 }}>Assignment Title</label>
+              <input required value={newForm.title} onChange={e => setNewForm({ ...newForm, title: e.target.value })}
+                placeholder="e.g. Weekly Calculus Problem Set"
+                style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: "0.9rem", boxSizing: "border-box" }} />
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--navy)", marginBottom: 6 }}>Subject</label>
+                <select value={newForm.subject} onChange={e => setNewForm({ ...newForm, subject: e.target.value })}
+                  style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: "0.9rem" }}>
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="English Language">English Language</option>
+                  <option value="Physics">Physics</option>
+                  <option value="Chemistry">Chemistry</option>
+                  <option value="Biology">Biology</option>
+                  <option value="Economics">Economics</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--navy)", marginBottom: 6 }}>Target Class</label>
+                <select value={newForm.targetClass} onChange={e => setNewForm({ ...newForm, targetClass: e.target.value })}
+                  style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: "0.9rem" }}>
+                  <option value="SSS 3">SSS 3</option>
+                  <option value="SSS 2">SSS 2</option>
+                  <option value="SSS 1">SSS 1</option>
+                  <option value="JSS 3">JSS 3</option>
+                  <option value="JAMB / WAEC Candidates">JAMB / WAEC Candidates</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--navy)", marginBottom: 6 }}>Description & Instructions</label>
+              <textarea required rows={3} value={newForm.description} onChange={e => setNewForm({ ...newForm, description: e.target.value })}
+                placeholder="Detail what questions or essay students should complete..."
+                style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: "0.9rem", resize: "vertical", boxSizing: "border-box" }} />
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--navy)", marginBottom: 6 }}>Due Date</label>
+              <input type="date" value={newForm.dueDate} onChange={e => setNewForm({ ...newForm, dueDate: e.target.value })}
+                style={{ width: "100%", padding: "10px 14px", borderRadius: 10, border: "1px solid var(--border)", fontSize: "0.9rem", boxSizing: "border-box" }} />
+            </div>
+
+            <button type="submit" style={{ padding: "12px", background: "var(--navy)", color: "#ffffff", border: "none", borderRadius: 10, fontWeight: 800, cursor: "pointer" }}>
+              Publish Assignment
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Assignments List */}
+      {loading ? (
+        <div style={{ textAlign: "center", padding: 40, color: "var(--text-3)" }}>Loading assignments...</div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {assignments.map((item) => (
+            <div key={item.id} className="dash-card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", flexWrap: "wrap", gap: 12 }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <span style={{ background: "rgba(16,28,68,0.06)", color: "var(--navy)", padding: "2px 8px", borderRadius: 6, fontSize: "0.72rem", fontWeight: 800 }}>
+                    {item.subject}
+                  </span>
+                  <span style={{ fontSize: "0.78rem", color: "var(--text-3)", fontWeight: 700 }}>
+                    Class: {item.targetClass}
+                  </span>
+                </div>
+                <div style={{ fontWeight: 800, color: "var(--navy)", fontSize: "1rem" }}>
+                  {item.title}
+                </div>
+                <div style={{ fontSize: "0.78rem", color: "var(--text-3)", marginTop: 4 }}>
+                  {item._count?.submissions || 0} student submissions
+                </div>
+              </div>
+
+              <button
+                onClick={() => handleOpenSubmissions(item)}
+                style={{ padding: "8px 16px", background: "rgba(16,28,68,0.08)", color: "var(--navy)", border: "none", borderRadius: 8, fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}
+              >
+                View Submissions ({item._count?.submissions || 0}) →
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Submissions Modal */}
+      {viewSubmissions && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: "#ffffff", borderRadius: 20, padding: 30, maxWidth: 640, width: "100%", maxHeight: "85vh", overflowY: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+              <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.2rem", fontWeight: 800, color: "var(--navy)", margin: 0 }}>
+                Submissions: {viewSubmissions.title}
+              </h3>
+              <button onClick={() => setViewSubmissions(null)} style={{ background: "#f1f5f9", border: "none", borderRadius: 8, padding: "6px 12px", cursor: "pointer" }}>
+                ✕ Close
+              </button>
+            </div>
+
+            {submissionsList.length === 0 ? (
+              <div style={{ textAlign: "center", padding: 30, color: "var(--text-3)" }}>
+                No students have submitted this assignment yet.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {submissionsList.map((sub) => (
+                  <div key={sub.id} style={{ background: "#f8fafc", borderRadius: 12, padding: "16px", border: "1px solid var(--border)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <div style={{ fontWeight: 800, color: "var(--navy)", fontSize: "0.92rem" }}>
+                        {sub.student?.profile?.fullName || sub.student?.email}
+                      </div>
+                      <span style={{ fontSize: "0.78rem", fontWeight: 800, color: sub.status === "GRADED" ? "#16a34a" : "#d97706" }}>
+                        {sub.status === "GRADED" ? `Score: ${sub.score}/100` : "Pending Grade"}
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: "0.85rem", color: "var(--text-2)", lineHeight: 1.5, background: "#ffffff", padding: "10px", borderRadius: 8, border: "1px solid var(--border)", marginBottom: 10 }}>
+                      {sub.submissionText}
+                    </div>
+
+                    <button
+                      onClick={() => { setGradeModal(sub); setGradeScore(sub.score || ""); setGradeFeedback(sub.feedback || ""); }}
+                      style={{ padding: "6px 14px", background: "var(--navy)", color: "#ffffff", border: "none", borderRadius: 6, fontWeight: 700, fontSize: "0.78rem", cursor: "pointer" }}
+                    >
+                      {sub.status === "GRADED" ? "Update Score & Remark" : "Grade Submission"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Grade Modal */}
+      {gradeModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <div style={{ background: "#ffffff", borderRadius: 18, padding: 26, maxWidth: 440, width: "100%" }}>
+            <h4 style={{ fontFamily: "var(--font-h)", color: "var(--navy)", margin: "0 0 14px" }}>
+              Grade Student Work
+            </h4>
+            <form onSubmit={handleSaveGrade} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "var(--navy)", marginBottom: 4 }}>Score (Out of 100)</label>
+                <input required type="number" min={0} max={100} value={gradeScore} onChange={e => setGradeScore(e.target.value)}
+                  placeholder="e.g. 85" style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid var(--border)", fontSize: "0.9rem", boxSizing: "border-box" }} />
+              </div>
+
+              <div>
+                <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "var(--navy)", marginBottom: 4 }}>Teacher Feedback & Remarks</label>
+                <textarea rows={3} value={gradeFeedback} onChange={e => setGradeFeedback(e.target.value)}
+                  placeholder="Constructive feedback to guide the student..."
+                  style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid var(--border)", fontSize: "0.85rem", boxSizing: "border-box" }} />
+              </div>
+
+              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 6 }}>
+                <button type="button" onClick={() => setGradeModal(null)} style={{ padding: "8px 14px", borderRadius: 6, border: "1px solid var(--border)", background: "#ffffff", fontWeight: 700, cursor: "pointer" }}>Cancel</button>
+                <button type="submit" style={{ padding: "8px 16px", borderRadius: 6, border: "none", background: "#16a34a", color: "#ffffff", fontWeight: 800, cursor: "pointer" }}>Save Grade</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── TEACHER: QUESTION BANK CONTRIBUTION TAB ──────────────────────────────────
+function TeacherQuestionBankTab() {
+  const [toast, setToast] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    examType: "JAMB",
+    subject: "Mathematics",
+    targetClass: "SSS 3",
+    topic: "",
+    year: "2024",
+    difficulty: "MEDIUM",
+    questionText: "",
+    optionA: "",
+    optionB: "",
+    optionC: "",
+    optionD: "",
+    correctOption: "A",
+    explanation: ""
+  });
+
+  const notify = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleAddQuestion = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+
+    const payload = {
+      examType: form.examType,
+      subject: form.subject,
+      targetClass: form.targetClass,
+      topic: form.topic,
+      year: parseInt(form.year) || 2024,
+      difficulty: form.difficulty,
+      questionText: form.questionText,
+      options: [
+        { id: "A", text: form.optionA },
+        { id: "B", text: form.optionB },
+        { id: "C", text: form.optionC },
+        { id: "D", text: form.optionD },
+      ],
+      correctOption: form.correctOption,
+      explanation: form.explanation
+    };
+
+    try {
+      await client.post("/cbt/questions", payload);
+      notify("Question contributed to academy question bank! ✓");
+      setForm({
+        ...form,
+        questionText: "",
+        optionA: "",
+        optionB: "",
+        optionC: "",
+        optionD: "",
+        explanation: ""
+      });
+    } catch (err) {
+      notify(err.response?.data?.error || "Failed to add question", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      {toast && <Toast msg={toast.msg} type={toast.type} />}
+
+      <div style={{ marginBottom: 20 }}>
+        <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.3rem", fontWeight: 900, color: "var(--navy)", margin: "0 0 4px" }}>
+          💡 Contribute to Central Question Bank
+        </h3>
+        <p style={{ color: "var(--text-2)", fontSize: "0.88rem", margin: 0 }}>
+          Add verified curriculum exam questions to power the academy's CBT Examination Engine.
+        </p>
+      </div>
+
+      <div className="dash-card" style={{ padding: "28px" }}>
+        <form onSubmit={handleAddQuestion} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "var(--navy)", marginBottom: 4 }}>Examination</label>
+              <select value={form.examType} onChange={e => setForm({ ...form, examType: e.target.value })}
+                style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid var(--border)", fontSize: "0.88rem" }}>
+                <option value="JAMB">JAMB UTME</option>
+                <option value="WAEC">WAEC SSCE</option>
+                <option value="NECO">NECO SSCE</option>
+                <option value="INTERNAL">Academy Mock</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "var(--navy)", marginBottom: 4 }}>Subject</label>
+              <select value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })}
+                style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid var(--border)", fontSize: "0.88rem" }}>
+                <option value="Mathematics">Mathematics</option>
+                <option value="English Language">English Language</option>
+                <option value="Physics">Physics</option>
+                <option value="Chemistry">Chemistry</option>
+                <option value="Biology">Biology</option>
+                <option value="Economics">Economics</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "var(--navy)", marginBottom: 4 }}>Topic</label>
+              <input required value={form.topic} onChange={e => setForm({ ...form, topic: e.target.value })}
+                placeholder="e.g. Surds & Indices"
+                style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid var(--border)", fontSize: "0.88rem", boxSizing: "border-box" }} />
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "var(--navy)", marginBottom: 4 }}>Difficulty</label>
+              <select value={form.difficulty} onChange={e => setForm({ ...form, difficulty: e.target.value })}
+                style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid var(--border)", fontSize: "0.88rem" }}>
+                <option value="EASY">Easy</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HARD">Challenging</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "var(--navy)", marginBottom: 4 }}>Question Prompt</label>
+            <textarea required rows={3} value={form.questionText} onChange={e => setForm({ ...form, questionText: e.target.value })}
+              placeholder="State the question clearly..."
+              style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid var(--border)", fontSize: "0.88rem", resize: "vertical", boxSizing: "border-box" }} />
+          </div>
+
+          {/* Options A to D */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.76rem", fontWeight: 700, color: "var(--navy)", marginBottom: 3 }}>Option A</label>
+              <input required value={form.optionA} onChange={e => setForm({ ...form, optionA: e.target.value })}
+                placeholder="Text for option A" style={{ width: "100%", padding: "9px", borderRadius: 8, border: "1px solid var(--border)", fontSize: "0.85rem", boxSizing: "border-box" }} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.76rem", fontWeight: 700, color: "var(--navy)", marginBottom: 3 }}>Option B</label>
+              <input required value={form.optionB} onChange={e => setForm({ ...form, optionB: e.target.value })}
+                placeholder="Text for option B" style={{ width: "100%", padding: "9px", borderRadius: 8, border: "1px solid var(--border)", fontSize: "0.85rem", boxSizing: "border-box" }} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.76rem", fontWeight: 700, color: "var(--navy)", marginBottom: 3 }}>Option C</label>
+              <input required value={form.optionC} onChange={e => setForm({ ...form, optionC: e.target.value })}
+                placeholder="Text for option C" style={{ width: "100%", padding: "9px", borderRadius: 8, border: "1px solid var(--border)", fontSize: "0.85rem", boxSizing: "border-box" }} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: "0.76rem", fontWeight: 700, color: "var(--navy)", marginBottom: 3 }}>Option D</label>
+              <input required value={form.optionD} onChange={e => setForm({ ...form, optionD: e.target.value })}
+                placeholder="Text for option D" style={{ width: "100%", padding: "9px", borderRadius: 8, border: "1px solid var(--border)", fontSize: "0.85rem", boxSizing: "border-box" }} />
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "160px 1fr", gap: 12 }}>
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 800, color: "#15803d", marginBottom: 4 }}>Correct Option</label>
+              <select value={form.correctOption} onChange={e => setForm({ ...form, correctOption: e.target.value })}
+                style={{ width: "100%", padding: "10px", borderRadius: 8, border: "2px solid #22c55e", fontSize: "0.9rem", fontWeight: 800 }}>
+                <option value="A">Option A</option>
+                <option value="B">Option B</option>
+                <option value="C">Option C</option>
+                <option value="D">Option D</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: "block", fontSize: "0.78rem", fontWeight: 700, color: "var(--navy)", marginBottom: 4 }}>Detailed Worked Solution / Explanation</label>
+              <input value={form.explanation} onChange={e => setForm({ ...form, explanation: e.target.value })}
+                placeholder="Explain why this option is correct for the student review screen..."
+                style={{ width: "100%", padding: "10px", borderRadius: 8, border: "1px solid var(--border)", fontSize: "0.88rem", boxSizing: "border-box" }} />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={saving}
+            style={{
+              marginTop: 10,
+              padding: "12px",
+              background: "var(--navy)",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: 10,
+              fontWeight: 800,
+              fontSize: "0.92rem",
+              cursor: "pointer",
+              opacity: saving ? 0.7 : 1
+            }}
+          >
+            {saving ? "Saving to Database..." : "Save Question to Central Bank ✓"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── SETTINGS TAB (Class & Subject Personalization) ───────────────────────────
+function SettingsTab({ authUser, onProfileUpdate }) {
+  const [form, setForm] = useState({
+    fullName: authUser?.profile?.fullName || "",
+    phone: authUser?.profile?.phone || "",
+    dateOfBirth: authUser?.profile?.dateOfBirth ? authUser.profile.dateOfBirth.slice(0, 10) : "",
+    targetClass: authUser?.profile?.targetClass || "SSS 3",
+    selectedSubjects: Array.isArray(authUser?.profile?.selectedSubjects) ? authUser.profile.selectedSubjects : ["Mathematics", "English Language"],
+  });
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [avatar, setAvatar] = useState(authUser?.profile?.avatarUrl || null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const ALL_SUBJECTS = [
+    "Mathematics",
+    "English Language",
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "Economics",
+    "Government",
+    "Literature in English",
+    "Computer Studies / Coding"
+  ];
+
+  const notify = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { notify("Image must be under 2MB.", "error"); return; }
+    setUploadingAvatar(true);
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      const dataUrl = ev.target.result;
+      setAvatar(dataUrl);
+      try {
+        await client.post("/users/me/photo", { avatarUrl: dataUrl });
+        notify("Profile photo updated! ✅");
+      } catch {
+        notify("Failed to upload photo.", "error");
+      }
+      setUploadingAvatar(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const toggleSubject = (subj) => {
+    setForm((prev) => {
+      const exists = prev.selectedSubjects.includes(subj);
+      return {
+        ...prev,
+        selectedSubjects: exists
+          ? prev.selectedSubjects.filter((s) => s !== subj)
+          : [...prev.selectedSubjects, subj]
+      };
+    });
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const res = await client.put("/users/me", {
+        fullName: form.fullName,
+        phone: form.phone,
+        dateOfBirth: form.dateOfBirth || undefined,
+        targetClass: form.targetClass,
+        selectedSubjects: form.selectedSubjects,
+      });
+      if (onProfileUpdate) onProfileUpdate(res.data.user);
+      notify("Profile and class preferences saved! ✓");
+    } catch (err) {
+      notify(err?.response?.data?.error || "Failed to save settings.", "error");
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div>
+      {toast && <Toast msg={toast.msg} type={toast.type} />}
+      <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.25rem", fontWeight: 800, color: "var(--navy)", marginBottom: 22 }}>
+        ⚙️ Account & Academic Personalization
+      </h3>
+
+      {/* Avatar Card */}
+      <div className="dash-card" style={{ maxWidth: 640, padding: 24, marginBottom: 18 }}>
+        <h4 style={{ fontFamily: "var(--font-h)", color: "var(--navy)", margin: "0 0 16px" }}>Profile Photo</h4>
+        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+          <div style={{ width: 80, height: 80, borderRadius: "50%", overflow: "hidden", border: "3px solid var(--border)", flexShrink: 0, background: "var(--navy)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            {avatar
+              ? <img src={avatar} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              : <span style={{ color: "var(--gold)", fontWeight: 900, fontSize: "1.8rem" }}>{getInitials(form.fullName || authUser?.email)}</span>
+            }
+          </div>
+          <div>
+            <label style={{ display: "inline-block", padding: "9px 18px", background: "var(--navy)", color: "#fff", borderRadius: 10, fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}>
+              {uploadingAvatar ? "Uploading..." : "📸 Upload Photo"}
+              <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: "none" }} disabled={uploadingAvatar} />
+            </label>
+            <p style={{ fontSize: "0.78rem", color: "var(--text-3)", marginTop: 6 }}>JPG or PNG · Max 2MB</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="dash-card" style={{ maxWidth: 640, padding: 28 }}>
+        <form onSubmit={handleSave} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          {/* Full Name */}
+          <div>
+            <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--text-3)", marginBottom: 6, textTransform: "uppercase" }}>
+              Full Name
+            </label>
+            <input
+              type="text"
+              value={form.fullName}
+              onChange={e => setForm({ ...form, fullName: e.target.value })}
+              placeholder="Your full name"
+              style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "1px solid var(--border)", fontSize: "0.95rem", boxSizing: "border-box" }}
+            />
+          </div>
+
+          {/* Academic Class / Level */}
+          <div>
+            <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--text-3)", marginBottom: 6, textTransform: "uppercase" }}>
+              Academic Class / Target Program
+            </label>
+            <select
+              value={form.targetClass}
+              onChange={e => setForm({ ...form, targetClass: e.target.value })}
+              style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "1px solid var(--border)", fontSize: "0.95rem", fontWeight: 700, color: "var(--navy)", background: "#ffffff" }}
+            >
+              <option value="JSS 1">Junior Secondary School 1 (JSS 1)</option>
+              <option value="JSS 2">Junior Secondary School 2 (JSS 2)</option>
+              <option value="JSS 3">Junior Secondary School 3 (JSS 3)</option>
+              <option value="SSS 1">Senior Secondary School 1 (SSS 1)</option>
+              <option value="SSS 2">Senior Secondary School 2 (SSS 2)</option>
+              <option value="SSS 3">Senior Secondary School 3 (SSS 3)</option>
+              <option value="JAMB UTME Candidate">JAMB UTME Candidate</option>
+              <option value="WAEC Candidate">WAEC SSCE Candidate</option>
+              <option value="Digital Skills Student">Digital Skills Student</option>
+            </select>
+          </div>
+
+          {/* Subject Selection */}
+          <div>
+            <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--text-3)", marginBottom: 8, textTransform: "uppercase" }}>
+              Enrolled / Primary Subjects
+            </label>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8 }}>
+              {ALL_SUBJECTS.map((subj) => {
+                const checked = form.selectedSubjects.includes(subj);
+                return (
+                  <div
+                    key={subj}
+                    onClick={() => toggleSubject(subj)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      border: checked ? "1px solid var(--navy)" : "1px solid var(--border)",
+                      background: checked ? "rgba(16,28,68,0.05)" : "#ffffff",
+                      cursor: "pointer"
+                    }}
+                  >
+                    <input type="checkbox" checked={checked} readOnly style={{ accentColor: "var(--navy)" }} />
+                    <span style={{ fontSize: "0.82rem", fontWeight: checked ? 700 : 500, color: "var(--navy)" }}>{subj}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Phone */}
+          <div>
+            <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--text-3)", marginBottom: 6, textTransform: "uppercase" }}>
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={e => setForm({ ...form, phone: e.target.value })}
+              placeholder="+234..."
+              style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "1px solid var(--border)", fontSize: "0.95rem", boxSizing: "border-box" }}
+            />
+          </div>
+
+          {/* Date of Birth */}
+          <div>
+            <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--text-3)", marginBottom: 6, textTransform: "uppercase" }}>
+              Date of Birth
+            </label>
+            <input
+              type="date"
+              value={form.dateOfBirth}
+              onChange={e => setForm({ ...form, dateOfBirth: e.target.value })}
+              style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "1px solid var(--border)", fontSize: "0.95rem", boxSizing: "border-box" }}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={saving}
+            className="btn-primary"
+            style={{ opacity: saving ? 0.6 : 1, cursor: saving ? "not-allowed" : "pointer" }}
+          >
+            {saving ? "Saving Changes..." : "💾 Save Profile & Subjects"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── EXISTING COMMUNITY TABS (Friends, Messages, Groups, Notifications) ──────
 function FriendsTab({ currentUserId }) {
-  const [subTab, setSubTab] = useState("friends"); // friends | requests | find
-  const [friends, setFriends]     = useState([]);
-  const [requests, setRequests]   = useState([]);
-  const [search, setSearch]       = useState("");
+  const [subTab, setSubTab] = useState("friends");
+  const [friends, setFriends] = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
-  const [loading, setLoading]     = useState(true);
-  const [toast, setToast]         = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState(null);
 
   const notify = (msg, type = "success") => {
     setToast({ msg, type });
@@ -75,9 +1234,6 @@ function FriendsTab({ currentUserId }) {
     if (!search.trim()) return;
     setSearching(true);
     try {
-      // search by username/name via GET /users (adapt to your API)
-      // Using the friend-request endpoint with receiverId as a proxy is not ideal;
-      // Here we do a basic GET /users/search?q=... — if not available, we show message
       const res = await client.get(`/users/search?q=${encodeURIComponent(search)}`);
       setSearchResults(res.data.users || []);
     } catch {
@@ -128,81 +1284,71 @@ function FriendsTab({ currentUserId }) {
       {toast && <Toast msg={toast.msg} type={toast.type} />}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
         <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.25rem", fontWeight: 800, color: "var(--navy)", margin: 0 }}>
-          🤝 Friends
+          🤝 Friends & Classmates
         </h3>
         <div style={{ display: "flex", gap: 4, background: "#f1f5f9", padding: 4, borderRadius: 10 }}>
-          <button style={subTabStyle(subTab === "friends")} onClick={() => setSubTab("friends")}>My Friends {friends.length > 0 && `(${friends.length})`}</button>
+          <button style={subTabStyle(subTab === "friends")} onClick={() => setSubTab("friends")}>My Friends ({friends.length})</button>
           <button style={subTabStyle(subTab === "requests")} onClick={() => setSubTab("requests")}>Requests {requests.length > 0 && <span style={{ background: "#ef4444", color: "#fff", borderRadius: "50%", padding: "1px 6px", marginLeft: 4, fontSize: "0.75rem" }}>{requests.length}</span>}</button>
-          <button style={subTabStyle(subTab === "find")} onClick={() => setSubTab("find")}>Find People</button>
+          <button style={subTabStyle(subTab === "find")} onClick={() => setSubTab("find")}>Find Classmates</button>
         </div>
       </div>
 
-      {/* MY FRIENDS */}
       {subTab === "friends" && (
-        loading ? <div style={{ textAlign: "center", color: "var(--text-3)", padding: 40 }}>Loading...</div>
-        : friends.length === 0
-          ? (
-            <div className="dash-card" style={{ textAlign: "center", padding: "40px 30px", color: "var(--text-3)" }}>
-              <div style={{ fontSize: "3rem", marginBottom: 10 }}>👥</div>
-              <p style={{ fontWeight: 600, margin: 0 }}>You haven't connected with anyone yet.</p>
-              <button onClick={() => setSubTab("find")} style={{ marginTop: 16, padding: "10px 20px", background: "var(--navy)", color: "#fff", border: "none", borderRadius: 10, fontWeight: 700, cursor: "pointer" }}>
-                Find People
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 14 }}>
-              {friends.map(f => (
-                <div key={f.id} className="dash-card" style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px" }}>
-                  <Avatar name={f.profile?.fullName || f.username || "?"} size={44} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, color: "var(--navy)", fontSize: "0.95rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {f.profile?.fullName || f.username}
-                    </div>
-                    <div style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>{f.role}</div>
+        loading ? <div style={{ textAlign: "center", color: "var(--text-3)", padding: 40 }}>Loading friends...</div>
+        : friends.length === 0 ? (
+          <div className="dash-card" style={{ textAlign: "center", padding: "40px 30px", color: "var(--text-3)" }}>
+            <div style={{ fontSize: "3rem", marginBottom: 10 }}>👥</div>
+            <p style={{ fontWeight: 600, margin: 0 }}>You haven't connected with anyone yet.</p>
+            <button onClick={() => setSubTab("find")} style={{ marginTop: 16, padding: "10px 20px", background: "var(--navy)", color: "#fff", border: "none", borderRadius: 10, fontWeight: 700, cursor: "pointer" }}>
+              Find Classmates
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 14 }}>
+            {friends.map(f => (
+              <div key={f.id} className="dash-card" style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px" }}>
+                <Avatar name={f.profile?.fullName || f.username || "?"} size={44} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, color: "var(--navy)", fontSize: "0.95rem" }}>
+                    {f.profile?.fullName || f.username}
                   </div>
-                  <Link to="/chat" style={{ padding: "6px 12px", background: "rgba(15,33,68,0.07)", borderRadius: 8, fontSize: "0.8rem", fontWeight: 700, color: "var(--navy)", textDecoration: "none" }}>
-                    💬 Chat
-                  </Link>
+                  <div style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>{f.role}</div>
                 </div>
-              ))}
-            </div>
-          )
+                <Link to="/chat" style={{ padding: "6px 12px", background: "rgba(15,33,68,0.07)", borderRadius: 8, fontSize: "0.8rem", fontWeight: 700, color: "var(--navy)", textDecoration: "none" }}>
+                  💬 Chat
+                </Link>
+              </div>
+            ))}
+          </div>
+        )
       )}
 
-      {/* PENDING REQUESTS */}
       {subTab === "requests" && (
-        requests.length === 0
-          ? (
-            <div className="dash-card" style={{ textAlign: "center", padding: "40px 30px", color: "var(--text-3)" }}>
-              <div style={{ fontSize: "3rem", marginBottom: 10 }}>📭</div>
-              <p style={{ fontWeight: 600, margin: 0 }}>No pending friend requests.</p>
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {requests.map(req => (
-                <div key={req.id} className="dash-card" style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px" }}>
-                  <Avatar name={req.requester?.profile?.fullName || req.requester?.username || "?"} size={44} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, color: "var(--navy)" }}>
-                      {req.requester?.profile?.fullName || req.requester?.username}
-                    </div>
-                    <div style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>Sent you a friend request</div>
+        requests.length === 0 ? (
+          <div className="dash-card" style={{ textAlign: "center", padding: "40px 30px", color: "var(--text-3)" }}>
+            <p style={{ fontWeight: 600, margin: 0 }}>No pending friend requests.</p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {requests.map(req => (
+              <div key={req.id} className="dash-card" style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px" }}>
+                <Avatar name={req.requester?.profile?.fullName || req.requester?.username || "?"} size={44} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, color: "var(--navy)" }}>
+                    {req.requester?.profile?.fullName || req.requester?.username}
                   </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => acceptRequest(req.id)} style={{ padding: "7px 14px", background: "var(--navy)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: "0.82rem" }}>
-                      Accept
-                    </button>
-                    <button onClick={() => rejectRequest(req.id)} style={{ padding: "7px 14px", background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: "0.82rem" }}>
-                      Decline
-                    </button>
-                  </div>
+                  <div style={{ fontSize: "0.78rem", color: "var(--text-3)" }}>Sent you a friend request</div>
                 </div>
-              ))}
-            </div>
-          )
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => acceptRequest(req.id)} style={{ padding: "7px 14px", background: "var(--navy)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: "0.82rem" }}>Accept</button>
+                  <button onClick={() => rejectRequest(req.id)} style={{ padding: "7px 14px", background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: 8, fontWeight: 700, cursor: "pointer", fontSize: "0.82rem" }}>Decline</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
       )}
 
-      {/* FIND PEOPLE */}
       {subTab === "find" && (
         <div>
           <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
@@ -210,14 +1356,14 @@ function FriendsTab({ currentUserId }) {
               value={search}
               onChange={e => setSearch(e.target.value)}
               onKeyDown={e => e.key === "Enter" && searchUsers()}
-              placeholder="Search by name or username..."
-              style={{ flex: 1, padding: "12px 16px", borderRadius: 12, border: "1px solid var(--border)", fontSize: "0.95rem", fontFamily: "inherit", outline: "none" }}
+              placeholder="Search classmates by name..."
+              style={{ flex: 1, padding: "12px 16px", borderRadius: 12, border: "1px solid var(--border)", fontSize: "0.95rem", outline: "none" }}
             />
             <button onClick={searchUsers} disabled={searching} style={{ padding: "12px 20px", background: "var(--navy)", color: "#fff", border: "none", borderRadius: 12, fontWeight: 700, cursor: "pointer" }}>
               {searching ? "..." : "Search"}
             </button>
           </div>
-          {searchResults.length > 0 ? (
+          {searchResults.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {searchResults.map(u => (
                 <div key={u.id} className="dash-card" style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px" }}>
@@ -232,18 +1378,13 @@ function FriendsTab({ currentUserId }) {
                 </div>
               ))}
             </div>
-          ) : search && !searching ? (
-            <div className="dash-card" style={{ textAlign: "center", padding: "30px", color: "var(--text-3)" }}>
-              <p style={{ margin: 0 }}>No users found for "<strong>{search}</strong>"</p>
-            </div>
-          ) : null}
+          )}
         </div>
       )}
     </div>
   );
 }
 
-// ─── Messages Preview Tab ────────────────────────────────────────────────────
 function MessagesTab() {
   const [friends, setFriends] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -259,7 +1400,7 @@ function MessagesTab() {
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
         <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.25rem", fontWeight: 800, color: "var(--navy)", margin: 0 }}>
-          💬 Messages
+          💬 Direct Messages
         </h3>
         <Link to="/chat" style={{ padding: "9px 18px", background: "var(--navy)", color: "#fff", borderRadius: 10, textDecoration: "none", fontWeight: 700, fontSize: "0.85rem" }}>
           Open Full Chat →
@@ -267,31 +1408,26 @@ function MessagesTab() {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: "center", color: "var(--text-3)", padding: 40 }}>Loading...</div>
+        <div style={{ textAlign: "center", color: "var(--text-3)", padding: 40 }}>Loading conversations...</div>
       ) : friends.length === 0 ? (
         <div className="dash-card" style={{ textAlign: "center", padding: "40px 30px", color: "var(--text-3)" }}>
           <div style={{ fontSize: "3rem", marginBottom: 10 }}>💬</div>
           <p style={{ fontWeight: 600, margin: 0 }}>No conversations yet.</p>
-          <p style={{ fontSize: "0.88rem", marginTop: 6 }}>Add friends first to start chatting.</p>
+          <p style={{ fontSize: "0.88rem", marginTop: 6 }}>Add classmates to start discussing coursework.</p>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {friends.map(f => (
             <Link to="/chat" key={f.id} style={{ textDecoration: "none" }}>
-              <div className="dash-card" style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", cursor: "pointer", transition: "transform 0.15s" }}
-                onMouseEnter={e => e.currentTarget.style.transform = "translateX(4px)"}
-                onMouseLeave={e => e.currentTarget.style.transform = "none"}>
-                <div style={{ position: "relative" }}>
-                  <Avatar name={f.profile?.fullName || f.username || "?"} size={46} />
-                  <span style={{ position: "absolute", bottom: 0, right: 0, width: 12, height: 12, background: "#22c55e", borderRadius: "50%", border: "2px solid #fff" }} />
-                </div>
+              <div className="dash-card" style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", cursor: "pointer" }}>
+                <Avatar name={f.profile?.fullName || f.username || "?"} size={46} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: 700, color: "var(--navy)", fontSize: "0.95rem" }}>
                     {f.profile?.fullName || f.username}
                   </div>
-                  <div style={{ fontSize: "0.8rem", color: "var(--text-3)" }}>Tap to open chat →</div>
+                  <div style={{ fontSize: "0.8rem", color: "var(--text-3)" }}>Tap to send message →</div>
                 </div>
-                <span style={{ fontSize: "1.2rem" }}>💬</span>
+                <span>💬</span>
               </div>
             </Link>
           ))}
@@ -301,428 +1437,81 @@ function MessagesTab() {
   );
 }
 
-// ─── Groups Tab ───────────────────────────────────────────────────────────────
-const GROUP_CARD_COLORS = [
-  "#dbeafe", "#dcfce7", "#fae8ff", "#fef3c7", "#fee2e2", "#e0f2fe"
-];
-const GROUP_EMOJIS = ["🔬", "📖", "💻", "🤝", "🎯", "📐"];
-
 function GroupsTab({ authUser }) {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [joinedIds, setJoinedIds] = useState(new Set());
-  const [toast, setToast] = useState(null);
-
-  const notify = (msg, type = "success") => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const loadGroups = useCallback(async () => {
-    try {
-      const res = await client.get("/groups");
-      setGroups(res.data.groups || []);
-    } catch { /* silent */ }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => { loadGroups(); }, [loadGroups]);
 
   useEffect(() => {
-    if (authUser?.enrollments) {
-      setJoinedIds(new Set(authUser.enrollments.map(e => e.groupId)));
-    }
-  }, [authUser]);
-
-  const handleJoin = async (groupId) => {
-    try {
-      await client.post(`/groups/${groupId}/join`);
-      setJoinedIds(prev => new Set([...prev, groupId]));
-      notify("Joined group! 🎉");
-      loadGroups();
-    } catch (e) { notify(e?.response?.data?.error || "Could not join.", "error"); }
-  };
-
-  const handleLeave = async (groupId) => {
-    try {
-      await client.delete(`/groups/${groupId}/leave`);
-      setJoinedIds(prev => { const s = new Set(prev); s.delete(groupId); return s; });
-      notify("Left group.");
-      loadGroups();
-    } catch (e) { notify(e?.response?.data?.error || "Could not leave.", "error"); }
-  };
+    client.get("/groups")
+      .then(res => setGroups(res.data.groups || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div>
-      {toast && <Toast msg={toast.msg} type={toast.type} />}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
         <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.25rem", fontWeight: 800, color: "var(--navy)", margin: 0 }}>
-          👥 Study Groups
+          👥 Study Circles & Groups
         </h3>
         <Link to="/groups" style={{ padding: "9px 18px", background: "var(--navy)", color: "#fff", borderRadius: 10, textDecoration: "none", fontWeight: 700, fontSize: "0.85rem" }}>
-          Browse All →
+          Browse All Circles →
         </Link>
       </div>
+
       {loading ? (
-        <p style={{ color: "var(--text-3)", textAlign: "center", padding: 24 }}>Loading groups...</p>
+        <p style={{ color: "var(--text-3)", textAlign: "center", padding: 24 }}>Loading study circles...</p>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 16 }}>
-          {groups.map((g, idx) => {
-            const isMember = joinedIds.has(g.id);
-            const memberCount = g._count?.enrollments ?? 0;
-            const color = GROUP_CARD_COLORS[idx % GROUP_CARD_COLORS.length];
-            const emoji = GROUP_EMOJIS[idx % GROUP_EMOJIS.length];
-            return (
-              <div key={g.id} className="dash-card" style={{ padding: 0, overflow: "hidden" }}>
-                <div style={{ background: color, padding: "20px 20px 14px", display: "flex", alignItems: "center", gap: 12 }}>
-                  <span style={{ fontSize: "2rem" }}>{emoji}</span>
-                  <div>
-                    <div style={{ fontWeight: 800, color: "var(--navy)", fontSize: "0.95rem" }}>{g.name}</div>
-                    {isMember && <span style={{ fontSize: "0.72rem", background: "rgba(15,33,68,0.12)", color: "var(--navy)", borderRadius: 6, padding: "2px 8px", fontWeight: 700 }}>✅ Joined</span>}
-                  </div>
-                </div>
-                <div style={{ padding: "14px 20px 18px" }}>
-                  <p style={{ fontSize: "0.85rem", color: "var(--text-2)", margin: "0 0 12px", lineHeight: 1.6 }}>
-                    {g.description || "No description provided."}
-                  </p>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: "0.8rem", color: "var(--text-3)", fontWeight: 600 }}>👥 {memberCount} member{memberCount !== 1 ? "s" : ""}</span>
-                    {isMember ? (
-                      <button onClick={() => handleLeave(g.id)} style={{ padding: "6px 14px", background: "#fee2e2", color: "#dc2626", border: "none", borderRadius: 8, fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}>
-                        Leave
-                      </button>
-                    ) : (
-                      <button onClick={() => handleJoin(g.id)} style={{ padding: "6px 14px", background: "var(--navy)", color: "#fff", border: "none", borderRadius: 8, fontWeight: 700, fontSize: "0.8rem", cursor: "pointer" }}>
-                        Join Group
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          {groups.length === 0 && (
-            <div className="dash-card" style={{ textAlign: "center", color: "var(--text-3)", padding: 40, gridColumn: "1/-1" }}>
-              <div style={{ fontSize: "2.5rem", marginBottom: 10 }}>👥</div>
-              <p style={{ fontWeight: 600, margin: 0 }}>No study groups available yet.</p>
+          {groups.map((g) => (
+            <div key={g.id} className="dash-card" style={{ padding: "20px" }}>
+              <div style={{ fontWeight: 800, color: "var(--navy)", fontSize: "1rem", marginBottom: 6 }}>{g.name}</div>
+              <p style={{ fontSize: "0.85rem", color: "var(--text-2)", margin: "0 0 14px", lineHeight: 1.5 }}>
+                {g.description || "Active academy circle for peer accountability."}
+              </p>
+              <Link to="/groups" style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--navy)" }}>
+                View Circle Discussion →
+              </Link>
             </div>
-          )}
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-// ─── Settings Tab ────────────────────────────────────────────────────────────
-function SettingsTab({ authUser, onProfileUpdate }) {
-  const [form, setForm]       = useState({
-    fullName:    authUser?.profile?.fullName    || "",
-    phone:       authUser?.profile?.phone       || "",
-    dateOfBirth: authUser?.profile?.dateOfBirth ? authUser.profile.dateOfBirth.slice(0, 10) : "",
-  });
-  const [saving, setSaving]   = useState(false);
-  const [toast, setToast]     = useState(null);
-  const [avatar, setAvatar]   = useState(authUser?.profile?.avatarUrl || null);
-  const [uploadingAvatar, setUploadingAvatar] = useState(false);
-
-  const notify = (msg, type = "success") => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const handleAvatarChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { notify("Image must be under 2MB.", "error"); return; }
-    setUploadingAvatar(true);
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const dataUrl = ev.target.result;
-      setAvatar(dataUrl);
-      try {
-        await client.post("/users/me/photo", { avatarUrl: dataUrl });
-        notify("Profile photo updated! ✅");
-      } catch {
-        notify("Failed to upload photo.", "error");
-      }
-      setUploadingAvatar(false);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const res = await client.put("/users/me", {
-        fullName: form.fullName,
-        phone: form.phone,
-        dateOfBirth: form.dateOfBirth || undefined,
-      });
-      if (onProfileUpdate) onProfileUpdate(res.data.user);
-      notify("Profile updated successfully!");
-    } catch (err) {
-      notify(err?.response?.data?.error || "Failed to save profile.", "error");
-    }
-    setSaving(false);
-  };
-
+function NotificationsTab() {
   return (
     <div>
-      {toast && <Toast msg={toast.msg} type={toast.type} />}
-      <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.25rem", fontWeight: 800, color: "var(--navy)", marginBottom: 22 }}>
-        ⚙️ Account Settings
+      <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.25rem", fontWeight: 800, color: "var(--navy)", marginBottom: 18 }}>
+        🔔 Academy Notifications
       </h3>
-
-      {/* Avatar Upload */}
-      <div className="dash-card" style={{ maxWidth: 600, padding: 24, marginBottom: 18 }}>
-        <h4 style={{ fontFamily: "var(--font-h)", color: "var(--navy)", margin: "0 0 16px" }}>Profile Photo</h4>
-        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <div style={{ width: 80, height: 80, borderRadius: "50%", overflow: "hidden", border: "3px solid var(--border)", flexShrink: 0, background: "var(--navy)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            {avatar
-              ? <img src={avatar} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              : <span style={{ color: "var(--gold)", fontWeight: 900, fontSize: "1.8rem" }}>{getInitials(form.fullName || authUser?.email)}</span>
-            }
-          </div>
+      <div className="dash-card" style={{ padding: 24 }}>
+        <div style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 16, borderBottom: "1px solid var(--border)", paddingBottom: 14 }}>
+          <span style={{ fontSize: "1.5rem" }}>📢</span>
           <div>
-            <label style={{ display: "inline-block", padding: "9px 18px", background: "var(--navy)", color: "#fff", borderRadius: 10, fontWeight: 700, fontSize: "0.85rem", cursor: "pointer" }}>
-              {uploadingAvatar ? "Uploading..." : "📸 Upload Photo"}
-              <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: "none" }} disabled={uploadingAvatar} />
-            </label>
-            <p style={{ fontSize: "0.78rem", color: "var(--text-3)", marginTop: 6 }}>JPG, PNG or GIF · Max 2MB</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="dash-card" style={{ maxWidth: 600, padding: 28 }}>
-        <form onSubmit={handleSave}>
-          {/* Full Name */}
-          <div style={{ marginBottom: 18 }}>
-            <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "var(--text-3)", marginBottom: 7, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Full Name
-            </label>
-            <input
-              type="text"
-              value={form.fullName}
-              onChange={e => setForm({ ...form, fullName: e.target.value })}
-              placeholder="Your full name"
-              style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "1px solid var(--border)", fontSize: "0.95rem", fontFamily: "inherit", outline: "none", boxSizing: "border-box" }}
-            />
-          </div>
-
-          {/* Phone */}
-          <div style={{ marginBottom: 18 }}>
-            <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "var(--text-3)", marginBottom: 7, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              value={form.phone}
-              onChange={e => setForm({ ...form, phone: e.target.value })}
-              placeholder="+234..."
-              style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "1px solid var(--border)", fontSize: "0.95rem", fontFamily: "inherit", outline: "none", boxSizing: "border-box" }}
-            />
-          </div>
-
-          {/* Date of Birth */}
-          <div style={{ marginBottom: 18 }}>
-            <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "var(--text-3)", marginBottom: 7, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Date of Birth
-            </label>
-            <input
-              type="date"
-              value={form.dateOfBirth}
-              onChange={e => setForm({ ...form, dateOfBirth: e.target.value })}
-              style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "1px solid var(--border)", fontSize: "0.95rem", fontFamily: "inherit", outline: "none", boxSizing: "border-box" }}
-            />
-          </div>
-
-          {/* Email — read only with note */}
-          <div style={{ marginBottom: 26 }}>
-            <label style={{ display: "block", fontSize: "0.82rem", fontWeight: 700, color: "var(--text-3)", marginBottom: 7, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Email Address
-            </label>
-            <input
-              type="email"
-              value={authUser?.email || ""}
-              readOnly
-              style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "1px solid var(--border)", fontSize: "0.95rem", fontFamily: "inherit", background: "#f8fafc", color: "var(--text-3)", boxSizing: "border-box", cursor: "not-allowed" }}
-            />
-            <p style={{ margin: "6px 0 0", fontSize: "0.78rem", color: "#f59e0b" }}>
-              ⚠️ Email changes require OTP verification — coming soon.
+            <div style={{ fontWeight: 800, color: "var(--navy)", fontSize: "0.95rem" }}>CBT Examination Center Live</div>
+            <p style={{ fontSize: "0.85rem", color: "var(--text-2)", margin: "4px 0 0" }}>
+              Practice questions are now accessible for JAMB UTME and WAEC SSCE in the new CBT Exam platform.
             </p>
           </div>
+        </div>
 
-          <button
-            type="submit"
-            disabled={saving}
-            className="btn-primary"
-            style={{ opacity: saving ? 0.6 : 1, cursor: saving ? "not-allowed" : "pointer" }}
-          >
-            {saving ? "Saving..." : "💾 Save Changes"}
-          </button>
-        </form>
-      </div>
-
-      {/* Danger Zone */}
-      <div className="dash-card" style={{ maxWidth: 600, marginTop: 20, padding: 24, borderColor: "#fecaca", background: "#fff5f5" }}>
-        <h4 style={{ margin: "0 0 6px", color: "#dc2626", fontFamily: "var(--font-h)" }}>⚠️ Danger Zone</h4>
-        <p style={{ margin: "0 0 16px", fontSize: "0.85rem", color: "var(--text-3)" }}>
-          Permanently delete your account and all data. This action cannot be undone.
-        </p>
-        <button style={{ padding: "9px 20px", background: "#fee2e2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: 10, fontWeight: 700, cursor: "pointer", fontSize: "0.85rem" }}
-          onClick={() => alert("Account deletion requires contacting support. Coming soon.")}>
-          Delete My Account
-        </button>
+        <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+          <span style={{ fontSize: "1.5rem" }}>💡</span>
+          <div>
+            <div style={{ fontWeight: 800, color: "var(--navy)", fontSize: "0.95rem" }}>New TIPS Learning System Available</div>
+            <p style={{ fontSize: "0.85rem", color: "var(--text-2)", margin: "4px 0 0" }}>
+              Quick recall mnemonics and common exam mistake guides are available in the TIPS section.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-// ─── Notifications Tab ───────────────────────────────────────────────────────
-function NotificationsTab({ authUser }) {
-  const [pushGranted, setPushGranted] = useState(
-    typeof Notification !== "undefined" ? Notification.permission : "default"
-  );
-  const [prefs, setPrefs] = useState({
-    inAppFriendRequests: true,
-    inAppMessages: true,
-    inAppAnnouncements: true,
-    emailCourseUpdates: false,
-    emailNewsletters: false,
-  });
-  const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState(null);
-
-  useEffect(() => {
-    if (authUser?.permissionOverrides) {
-      const newPrefs = {
-        inAppFriendRequests: true,
-        inAppMessages: true,
-        inAppAnnouncements: true,
-        emailCourseUpdates: false,
-        emailNewsletters: false,
-      };
-      authUser.permissionOverrides.forEach(override => {
-        if (override.key in newPrefs) {
-          newPrefs[override.key] = override.value;
-        }
-      });
-      setPrefs(newPrefs);
-    }
-  }, [authUser]);
-
-  const notify = (msg, type = "success") => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const requestPush = async () => {
-    if (!("Notification" in window)) {
-      notify("Your browser doesn't support push notifications.", "error");
-      return;
-    }
-    const result = await Notification.requestPermission();
-    setPushGranted(result);
-    if (result === "granted") {
-      notify("Push notifications enabled! 🔔");
-    } else {
-      notify("Permission denied. Enable in browser settings.", "error");
-    }
-  };
-
-  const savePrefs = async () => {
-    setSaving(true);
-    try {
-      await client.put("/users/me/privacy", { settings: prefs });
-      notify("Notification preferences saved!");
-    } catch {
-      notify("Failed to save preferences.", "error");
-    }
-    setSaving(false);
-  };
-
-  const Toggle = ({ label, desc, value, onChange }) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 0", borderBottom: "1px solid var(--border)" }}>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 700, color: "var(--navy)", fontSize: "0.9rem" }}>{label}</div>
-        <div style={{ fontSize: "0.78rem", color: "var(--text-3)", marginTop: 2 }}>{desc}</div>
-      </div>
-      <button
-        onClick={() => onChange(!value)}
-        style={{
-          width: 48, height: 26, borderRadius: 99, border: "none", cursor: "pointer",
-          background: value ? "var(--navy)" : "#e2e8f0",
-          position: "relative", transition: "background 0.2s", flexShrink: 0,
-        }}
-      >
-        <span style={{
-          position: "absolute", top: 3, left: value ? "calc(100% - 22px)" : 3,
-          width: 20, height: 20, borderRadius: "50%", background: "#fff",
-          transition: "left 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
-        }} />
-      </button>
-    </div>
-  );
-
-  return (
-    <div>
-      {toast && <Toast msg={toast.msg} type={toast.type} />}
-      <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.25rem", fontWeight: 800, color: "var(--navy)", marginBottom: 22 }}>
-        🔔 Notifications
-      </h3>
-
-      {/* Push Notifications */}
-      <div className="dash-card" style={{ maxWidth: 600, marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
-          <div style={{ fontSize: "2rem" }}>📱</div>
-          <div style={{ flex: 1 }}>
-            <h4 style={{ fontFamily: "var(--font-h)", color: "var(--navy)", margin: "0 0 4px" }}>Browser Push Notifications</h4>
-            <p style={{ fontSize: "0.85rem", color: "var(--text-2)", margin: "0 0 14px", lineHeight: 1.6 }}>
-              Allow St. Lawrence to send you real-time alerts for messages, friend requests, and announcements — even when you're not on the page.
-            </p>
-            {pushGranted === "granted" ? (
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#dcfce7", color: "#15803d", padding: "6px 14px", borderRadius: 99, fontWeight: 700, fontSize: "0.82rem" }}>
-                ✅ Notifications Enabled
-              </div>
-            ) : pushGranted === "denied" ? (
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#fee2e2", color: "#dc2626", padding: "6px 14px", borderRadius: 99, fontWeight: 700, fontSize: "0.82rem" }}>
-                🚫 Blocked — Enable in Browser Settings
-              </div>
-            ) : (
-              <button onClick={requestPush} style={{ padding: "10px 20px", background: "var(--navy)", color: "#fff", border: "none", borderRadius: 10, fontWeight: 700, cursor: "pointer", fontSize: "0.85rem", fontFamily: "inherit" }}>
-                🔔 Enable Push Notifications
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* In-App Preferences */}
-      <div className="dash-card" style={{ maxWidth: 600, marginBottom: 16 }}>
-        <h4 style={{ fontFamily: "var(--font-h)", color: "var(--navy)", margin: "0 0 4px" }}>In-App Notifications</h4>
-        <p style={{ fontSize: "0.82rem", color: "var(--text-3)", margin: "0 0 10px" }}>Choose what you're notified about while using the platform.</p>
-        <Toggle label="Friend Requests" desc="When someone sends you a friend request" value={prefs.inAppFriendRequests} onChange={v => setPrefs({ ...prefs, inAppFriendRequests: v })} />
-        <Toggle label="New Messages" desc="When you receive a direct message" value={prefs.inAppMessages} onChange={v => setPrefs({ ...prefs, inAppMessages: v })} />
-        <Toggle label="Announcements" desc="School news and important updates" value={prefs.inAppAnnouncements} onChange={v => setPrefs({ ...prefs, inAppAnnouncements: v })} />
-      </div>
-
-      {/* Email Preferences */}
-      <div className="dash-card" style={{ maxWidth: 600, marginBottom: 20 }}>
-        <h4 style={{ fontFamily: "var(--font-h)", color: "var(--navy)", margin: "0 0 4px" }}>Email Notifications</h4>
-        <p style={{ fontSize: "0.82rem", color: "var(--text-3)", margin: "0 0 10px" }}>Control what we send to your inbox.</p>
-        <Toggle label="Course Updates" desc="When new lessons or materials are added" value={prefs.emailCourseUpdates} onChange={v => setPrefs({ ...prefs, emailCourseUpdates: v })} />
-        <Toggle label="Newsletter" desc="Monthly academy news and student highlights" value={prefs.emailNewsletters} onChange={v => setPrefs({ ...prefs, emailNewsletters: v })} />
-      </div>
-
-      <button onClick={savePrefs} disabled={saving} className="btn-primary" style={{ opacity: saving ? 0.6 : 1 }}>
-        {saving ? "Saving..." : "💾 Save Preferences"}
-      </button>
-    </div>
-  );
-}
-
-// ─── Main Dashboard ──────────────────────────────────────────────────────────
+// ─── MAIN DASHBOARD EXPORT ───────────────────────────────────────────────────
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { user: authUser, logout, loading } = useAuth();
@@ -733,7 +1522,6 @@ export default function ProfilePage() {
     if (!loading && !authUser) navigate("/login");
   }, [authUser, loading, navigate]);
 
-  // Load pending friend request count for badge
   useEffect(() => {
     if (authUser) {
       client.get("/friends/requests/pending")
@@ -747,203 +1535,368 @@ export default function ProfilePage() {
   if (loading || !authUser)
     return <div style={{ minHeight: "100vh", background: "#f3f6fb" }} />;
 
+  const isTeacher = authUser.role === "TEACHER";
+
   const user = {
-    firstName:   authUser.profile?.fullName?.split(" ")[0] || authUser.email?.split("@")[0] || "Student",
-    lastName:    authUser.profile?.fullName?.split(" ").slice(1).join(" ") || "",
-    fullName:    authUser.profile?.fullName || authUser.email?.split("@")[0] || "Student",
-    role:        authUser.role || "STUDENT",
-    tier:        authUser.tier || "UNPAID",
-    email:       authUser.email,
+    firstName: authUser.profile?.fullName?.split(" ")[0] || authUser.email?.split("@")[0] || "Student",
+    lastName: authUser.profile?.fullName?.split(" ").slice(1).join(" ") || "",
+    fullName: authUser.profile?.fullName || authUser.email?.split("@")[0] || "Student",
+    role: authUser.role || "STUDENT",
+    tier: authUser.tier || "UNPAID",
+    targetClass: authUser.profile?.targetClass || "SSS 3 / Exam Candidate",
+    email: authUser.email,
   };
 
   const initials = getInitials(user.fullName || user.firstName);
 
-  const NAV = [
-    { label: "Overview",    icon: "🏠" },
-    { label: user.role === "TEACHER" ? "My Classes" : "My Courses", icon: "📚" },
-    { label: "Friends",     icon: "🤝", badge: pendingCount > 0 ? pendingCount : null },
-    { label: "Messages",    icon: "💬" },
-    { label: "Groups",      icon: "👥" },
-    user.role !== "TEACHER" ? { label: "Certificates", icon: "🏆" } : null,
-    { label: "Notifications", icon: "🔔" },
-    { label: "Settings",    icon: "⚙️" },
-  ].filter(Boolean);
+  // Student Navigation vs Teacher Navigation
+  const NAV = isTeacher
+    ? [
+        { label: "Overview", icon: "🏠" },
+        { label: "Assignments Manager", icon: "📝" },
+        { label: "Question Bank", icon: "💡" },
+        { label: "My Classes", icon: "📚" },
+        { label: "Friends", icon: "🤝" },
+        { label: "Messages", icon: "💬" },
+        { label: "Groups", icon: "👥" },
+        { label: "Notifications", icon: "🔔" },
+        { label: "Settings", icon: "⚙️" },
+      ]
+    : [
+        { label: "Overview", icon: "🏠" },
+        { label: "Learning Progress", icon: "📊" },
+        { label: "CBT History", icon: "⏱️" },
+        { label: "Assignments", icon: "📝" },
+        { label: "My Courses", icon: "📚" },
+        { label: "Friends", icon: "🤝", badge: pendingCount > 0 ? pendingCount : null },
+        { label: "Messages", icon: "💬" },
+        { label: "Groups", icon: "👥" },
+        { label: "Notifications", icon: "🔔" },
+        { label: "Settings", icon: "⚙️" },
+      ];
+
+  // For all students, render the unified modern StudentDashboardView across all tabs
+  if (!isTeacher) {
+    return (
+      <StudentDashboardView
+        user={{
+          ...user,
+          avatarUrl: authUser?.profile?.avatarUrl,
+          phone: authUser?.profile?.phone,
+          dateOfBirth: authUser?.profile?.dateOfBirth,
+          selectedSubjects: authUser?.profile?.selectedSubjects
+        }}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        pendingCount={pendingCount}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
 
   return (
-    <div className="profile-shell product-dashboard-page">
+    <div className="profile-shell product-dashboard-page" style={{ background: "var(--off-white)", minHeight: "100vh" }}>
       {/* ── TOP NAV ─────────────────────────────────── */}
-      <nav className="nav profile-page-nav">
-        <Link to="/" className="nav-logo">
-          <img src={logoImg} alt="St. Lawrence Next Gen Academy" className="nav-logo-img" />
-          <div className="nav-brand-name">
-            ST. LAWRENCE
-            <span style={{ display: "block", fontSize: "0.6rem", fontWeight: 500, color: "var(--text-3)" }}>
-              Next Gen Academy
-            </span>
+      <nav className="nav profile-page-nav" style={{ background: "#ffffff", borderBottom: "1px solid var(--border)", padding: "14px 24px" }}>
+        <Link to="/" className="nav-logo" style={{ textDecoration: "none" }}>
+          <img src={logoImg} alt="St. Lawrence Next Gen Academy" className="nav-logo-img" style={{ height: 38 }} />
+          <div>
+            <div className="nav-brand-name" style={{ fontFamily: "var(--font-h)", fontWeight: 900, color: "var(--navy)", fontSize: "1.05rem" }}>
+              ST. LAWRENCE
+            </div>
+            <div style={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--gold)" }}>
+              {isTeacher ? "TEACHER PORTAL" : "STUDENT LEARNING PLATFORM"}
+            </div>
           </div>
         </Link>
-        <div className="profile-top-actions" style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <Link to="/classrooms" style={{ color: "var(--text-2)", fontWeight: 600, fontSize: "0.87rem", whiteSpace: "nowrap" }}>
-            Browse Courses
+        <div style={{ display: "flex", gap: "14px", alignItems: "center" }}>
+          {!isTeacher && (
+            <button
+              onClick={() => setActiveTab("Overview")}
+              style={{
+                background: "rgba(16,28,68,0.06)",
+                border: "none",
+                padding: "8px 14px",
+                borderRadius: "10px",
+                color: "var(--navy)",
+                fontWeight: 700,
+                fontSize: "0.82rem",
+                cursor: "pointer"
+              }}
+            >
+              ← Overview
+            </button>
+          )}
+          <Link to="/cbt" style={{ color: "var(--navy)", fontWeight: 700, fontSize: "0.85rem", textDecoration: "none" }}>
+            CBT Exams
           </Link>
-          <Link to="/chat" style={{ color: "var(--text-2)", fontWeight: 600, fontSize: "0.87rem", whiteSpace: "nowrap" }}>
-            💬 Chat
+          <Link to="/tips" style={{ color: "var(--navy)", fontWeight: 700, fontSize: "0.85rem", textDecoration: "none" }}>
+            TIPS Recall
           </Link>
-          <button onClick={handleLogout} className="btn-ghost" style={{ padding: "8px 16px", fontSize: "0.8rem", whiteSpace: "nowrap" }}>
+          <Link to="/resources" style={{ color: "var(--navy)", fontWeight: 700, fontSize: "0.85rem", textDecoration: "none" }}>
+            Resources
+          </Link>
+          <button onClick={handleLogout} className="btn-ghost" style={{ padding: "8px 16px", fontSize: "0.8rem" }}>
             Log Out
           </button>
         </div>
       </nav>
 
-      {/* ── PAGE BODY ─────────────────────────────── */}
-      <div className="profile-wrap">
-        {/* ── PROFILE HEADER ──────────────────────── */}
-        <div className="profile-header-card">
-          <div className="profile-avatar-ring" style={{ overflow: authUser?.profile?.avatarUrl ? "hidden" : "visible", padding: 0 }}>
-            {authUser?.profile?.avatarUrl
-              ? <img src={authUser.profile.avatarUrl} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
-              : initials
-            }
-            <span className="profile-avatar-badge">✓</span>
+      {/* ── DASHBOARD BODY ─────────────────────────── */}
+      <div style={{ maxWidth: 1240, margin: "32px auto", padding: "0 20px" }}>
+        {!isTeacher && (
+          <div style={{ marginBottom: "16px" }}>
+            <button
+              onClick={() => setActiveTab("Overview")}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                background: "#ffffff",
+                border: "1px solid var(--border)",
+                padding: "8px 16px",
+                borderRadius: "12px",
+                color: "var(--navy)",
+                fontWeight: 700,
+                fontSize: "0.85rem",
+                cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(16,28,68,0.03)"
+              }}
+            >
+              ← Back to Main Dashboard
+            </button>
           </div>
-          <div className="profile-info" style={{ flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6, flexWrap: "wrap" }}>
-              <h2 style={{ margin: 0 }}>Welcome back, {user.firstName}!</h2>
+        )}
+        {/* User Header Profile Card */}
+        <div style={{ background: "#ffffff", borderRadius: 24, padding: "28px 32px", border: "1px solid var(--border)", marginBottom: 28, display: "flex", alignItems: "center", gap: 24, flexWrap: "wrap" }}>
+          <div style={{ width: 76, height: 76, borderRadius: "50%", background: "var(--navy)", color: "var(--gold)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: "1.8rem", flexShrink: 0 }}>
+            {authUser?.profile?.avatarUrl ? (
+              <img src={authUser.profile.avatarUrl} alt="Avatar" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
+            ) : initials}
+          </div>
+
+          <div style={{ flex: 1, minWidth: 240 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 4 }}>
+              <h2 style={{ fontFamily: "var(--font-h)", fontSize: "1.6rem", fontWeight: 900, color: "var(--navy)", margin: 0 }}>
+                Welcome, {user.firstName}!
+              </h2>
+              <span style={{
+                background: isTeacher ? "#fef3c7" : "rgba(16,28,68,0.06)",
+                color: isTeacher ? "#b45309" : "var(--navy)",
+                padding: "3px 10px",
+                borderRadius: 20,
+                fontSize: "0.74rem",
+                fontWeight: 800
+              }}>
+                {isTeacher ? "👨‍🏫 Teacher / Instructor" : `🎓 ${user.targetClass}`}
+              </span>
             </div>
-            <p style={{ margin: "0 0 14px" }}>{user.role} · St. Lawrence Next Gen Academy</p>
-            <div className="profile-badges">
-              <span className="profile-badge gold">🏆 Top Learner</span>
-              <span className="profile-badge green">✓ Verified</span>
-              <span className="profile-badge blue">🎓 {user.role}</span>
-              {user.tier === "PAID" && <span className="profile-badge gold">⭐ Premium</span>}
-            </div>
-            <div className="profile-stats-row">
-              <div className="profile-stat">
-                <div className="profile-stat-num">0</div>
-                <div className="profile-stat-lbl">{user.role === "TEACHER" ? "Courses Taught" : "Courses Active"}</div>
-              </div>
-              <div className="profile-stat">
-                <div className="profile-stat-num" style={{ color: "var(--gold)" }}>0</div>
-                <div className="profile-stat-lbl">{user.role === "TEACHER" ? "Total Students" : "Certificates"}</div>
-              </div>
-              <div className="profile-stat">
-                <div className="profile-stat-num">0</div>
-                <div className="profile-stat-lbl">{user.role === "TEACHER" ? "Hours Taught" : "Hours Learned"}</div>
-              </div>
-              <div className="profile-stat">
-                <div className="profile-stat-num" style={{ color: pendingCount > 0 ? "#22c55e" : undefined }}>
-                  {pendingCount}
-                </div>
-                <div className="profile-stat-lbl">Friend Requests</div>
-              </div>
-            </div>
+            <p style={{ color: "var(--text-3)", fontSize: "0.85rem", margin: "0 0 10px" }}>
+              {user.email} · St. Lawrence Next Gen Academy
+            </p>
+          </div>
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <Link to="/cbt" style={{ padding: "10px 18px", background: "var(--navy)", color: "#ffffff", borderRadius: 10, textDecoration: "none", fontWeight: 800, fontSize: "0.85rem" }}>
+              Open CBT Platform →
+            </Link>
           </div>
         </div>
 
-        {/* ── DASHBOARD LAYOUT ─────────────────── */}
-        <div className="dashboard-layout">
-          {/* SIDEBAR */}
-          <div className="dashboard-sidebar">
-            {NAV.map(({ label, icon, badge }) => (
-              <button
-                key={label}
-                onClick={() => setActiveTab(label)}
-                className={`dashboard-sidebar-item${activeTab === label ? " active" : ""}`}
-              >
-                <span>{icon}</span>
-                <span style={{ flex: 1 }}>{label}</span>
-                {badge && (
-                  <span style={{ background: "#ef4444", color: "#fff", borderRadius: 99, padding: "1px 7px", fontSize: "0.72rem", fontWeight: 800 }}>
-                    {badge}
-                  </span>
-                )}
-              </button>
-            ))}
+        {/* Dashboard Layout: Sidebar + Tab Content */}
+        <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: 28, alignItems: "start" }}>
+          {/* Sidebar */}
+          <div style={{ background: "#ffffff", borderRadius: 20, padding: 12, border: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 4 }}>
+            {NAV.map(({ label, icon, badge }) => {
+              const active = activeTab === label;
+              return (
+                <button
+                  key={label}
+                  onClick={() => setActiveTab(label)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: "12px 14px",
+                    borderRadius: 12,
+                    border: "none",
+                    background: active ? "var(--navy)" : "transparent",
+                    color: active ? "#ffffff" : "var(--navy)",
+                    fontWeight: active ? 800 : 600,
+                    fontSize: "0.88rem",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    transition: "all 0.15s ease"
+                  }}
+                >
+                  <span style={{ fontSize: "1.1rem" }}>{icon}</span>
+                  <span style={{ flex: 1 }}>{label}</span>
+                  {badge && (
+                    <span style={{ background: "#ef4444", color: "#ffffff", padding: "1px 6px", borderRadius: 10, fontSize: "0.72rem", fontWeight: 800 }}>
+                      {badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
-          {/* MAIN CONTENT */}
-          <div className="dashboard-main">
-
-            {/* ── OVERVIEW ── */}
+          {/* Main Area */}
+          <div style={{ minWidth: 0 }}>
+            {/* ── OVERVIEW TAB ── */}
             {activeTab === "Overview" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-                <div className="dashboard-grid">
-                  <div className="dash-card">
-                    <div className="dash-card-icon blue">📘</div>
-                    <h3>{user.role === "TEACHER" ? "Active Classes" : "Courses in Progress"}</h3>
-                    <p style={{ fontSize: "2.4rem", fontWeight: 900, fontFamily: "var(--font-h)", color: "var(--navy)", margin: "6px 0 0" }}>0</p>
-                  </div>
-                  <div className="dash-card">
-                    <div className="dash-card-icon gold">{user.role === "TEACHER" ? "👥" : "🏆"}</div>
-                    <h3>{user.role === "TEACHER" ? "Total Students" : "Certificates Earned"}</h3>
-                    <p style={{ fontSize: "2.4rem", fontWeight: 900, fontFamily: "var(--font-h)", color: "var(--gold)", margin: "6px 0 0" }}>0</p>
-                  </div>
-                  <div className="dash-card">
-                    <div className="dash-card-icon green">👥</div>
-                    <h3>Groups Joined</h3>
-                    <p style={{ fontSize: "2.4rem", fontWeight: 900, fontFamily: "var(--font-h)", color: "var(--navy)", margin: "6px 0 0" }}>{authUser?.enrollments?.length ?? 0}</p>
+              isTeacher ? (
+                <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+                  <SchoolDashboardView
+                    role="TEACHER"
+                    stats={{
+                      totalUsers: 240,
+                      activeTeachers: 4,
+                      premiumUsers: 48,
+                      totalRevenue: 98,
+                      coursesPublished: 6
+                    }}
+                    onNavigateTab={(tab) => {
+                      if (tab === "Teachers" || tab === "Courses") navigate("/classrooms");
+                      else if (tab === "Groups") setActiveTab("Groups");
+                      else if (tab === "Users") setActiveTab("Friends");
+                      else setActiveTab("Assignments Manager");
+                    }}
+                    onViewAllActivity={() => setActiveTab("Assignments Manager")}
+                  />
+                  
+                  {/* Quick Teacher Portals */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+                    <div
+                      onClick={() => setActiveTab("Assignments Manager")}
+                      className="dash-card"
+                      style={{ padding: "20px", cursor: "pointer", background: "#ffffff" }}
+                    >
+                      <div style={{ fontSize: "1.8rem", marginBottom: 4 }}>📝</div>
+                      <div style={{ fontWeight: 800, color: "var(--navy)", fontSize: "0.95rem" }}>Assignments Manager</div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-3)", marginTop: 2 }}>Create and grade student work</div>
+                    </div>
+
+                    <div
+                      onClick={() => setActiveTab("Question Bank")}
+                      className="dash-card"
+                      style={{ padding: "20px", cursor: "pointer", background: "#ffffff" }}
+                    >
+                      <div style={{ fontSize: "1.8rem", marginBottom: 4 }}>💡</div>
+                      <div style={{ fontWeight: 800, color: "var(--navy)", fontSize: "0.95rem" }}>Question Bank</div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-3)", marginTop: 2 }}>Contribute exam & mock questions</div>
+                    </div>
+
+                    <div
+                      onClick={() => navigate("/classrooms")}
+                      className="dash-card"
+                      style={{ padding: "20px", cursor: "pointer", background: "#ffffff" }}
+                    >
+                      <div style={{ fontSize: "1.8rem", marginBottom: 4 }}>🎥</div>
+                      <div style={{ fontWeight: 800, color: "var(--navy)", fontSize: "0.95rem" }}>Video Classrooms</div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--text-3)", marginTop: 2 }}>Teach and schedule video lessons</div>
+                    </div>
                   </div>
                 </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                  {/* Stats cards */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 14 }}>
+                    <div className="dash-card" style={{ padding: "20px" }}>
+                      <div style={{ fontSize: "1.8rem", marginBottom: 4 }}>📚</div>
+                      <div style={{ fontWeight: 700, color: "var(--text-3)", fontSize: "0.8rem" }}>Enrolled Subjects</div>
+                      <div style={{ fontSize: "1.6rem", fontWeight: 900, color: "var(--navy)", marginTop: 2 }}>
+                        {Array.isArray(authUser?.profile?.selectedSubjects) ? authUser.profile.selectedSubjects.length : 4}
+                      </div>
+                    </div>
 
-                {/* Quick shortcuts */}
-                <div>
-                  <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.1rem", fontWeight: 800, color: "var(--navy)", marginBottom: 14 }}>
-                    Quick Actions
-                  </h3>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
-                    {[
-                      { label: "Browse Courses", icon: "📚", to: "/classrooms" },
-                      { label: "Open Chat",       icon: "💬", to: "/chat" },
-                      { label: "Study Groups",    icon: "👥", to: "/groups" },
-                      { label: "Past Questions",  icon: "📝", to: "/past-questions" },
-                      { label: "Hall of Fame",    icon: "🏆", to: "/hall-of-fame" },
-                      { label: "Latest News",     icon: "📰", to: "/news" },
-                    ].map(item => (
-                      <Link key={item.label} to={item.to} style={{ textDecoration: "none" }}>
-                        <div className="dash-card" style={{ textAlign: "center", padding: "18px 12px", cursor: "pointer", transition: "transform 0.15s" }}
-                          onMouseEnter={e => e.currentTarget.style.transform = "translateY(-3px)"}
-                          onMouseLeave={e => e.currentTarget.style.transform = "none"}>
-                          <div style={{ fontSize: "1.8rem", marginBottom: 6 }}>{item.icon}</div>
-                          <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--navy)" }}>{item.label}</div>
+                    <div className="dash-card" style={{ padding: "20px" }}>
+                      <div style={{ fontSize: "1.8rem", marginBottom: 4 }}>⏱️</div>
+                      <div style={{ fontWeight: 700, color: "var(--text-3)", fontSize: "0.8rem" }}>CBT Practice</div>
+                      <div style={{ fontSize: "1.6rem", fontWeight: 900, color: "var(--navy)", marginTop: 2 }}>
+                        Available Now
+                      </div>
+                    </div>
+
+                    <div className="dash-card" style={{ padding: "20px" }}>
+                      <div style={{ fontSize: "1.8rem", marginBottom: 4 }}>💡</div>
+                      <div style={{ fontWeight: 700, color: "var(--text-3)", fontSize: "0.8rem" }}>TIPS Learning</div>
+                      <div style={{ fontSize: "1.6rem", fontWeight: 900, color: "var(--gold)", marginTop: 2 }}>
+                        Active
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Action Shortcuts */}
+                  <div className="dash-card" style={{ padding: "24px" }}>
+                    <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.15rem", fontWeight: 900, color: "var(--navy)", margin: "0 0 16px" }}>
+                      🚀 Quick Learning Portals
+                    </h3>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
+                      <Link to="/cbt" style={{ textDecoration: "none" }}>
+                        <div style={{ background: "rgba(16,28,68,0.03)", borderRadius: 14, padding: "18px 14px", textAlign: "center", border: "1px solid var(--border)" }}>
+                          <div style={{ fontSize: "1.8rem", marginBottom: 6 }}>⏱️</div>
+                          <div style={{ fontWeight: 800, color: "var(--navy)", fontSize: "0.88rem" }}>CBT Exam Practice</div>
+                          <div style={{ fontSize: "0.72rem", color: "var(--text-3)", marginTop: 2 }}>Timed tests & auto-grading</div>
                         </div>
                       </Link>
-                    ))}
-                  </div>
-                </div>
 
-                {/* Continue Learning */}
-                <div>
-                  <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.1rem", fontWeight: 800, color: "var(--navy)", marginBottom: 14 }}>
-                    {user.role === "TEACHER" ? "Recent Activity" : "Continue Learning"}
-                  </h3>
-                  <div className="dash-card dashboard-feature-card" style={{ padding: "30px", textAlign: "center", color: "var(--text-3)" }}>
-                    <div style={{ fontSize: "3rem", marginBottom: 10 }}>📭</div>
-                    <p style={{ margin: 0, fontWeight: 500 }}>
-                      {user.role === "TEACHER" ? "No recent activity yet." : "You are not enrolled in any courses yet."}
-                    </p>
-                    {user.role !== "TEACHER" && (
-                      <Link to="/classrooms" className="btn-primary" style={{ display: "inline-flex", marginTop: 20 }}>Browse Courses</Link>
-                    )}
+                      <Link to="/tips" style={{ textDecoration: "none" }}>
+                        <div style={{ background: "rgba(16,28,68,0.03)", borderRadius: 14, padding: "18px 14px", textAlign: "center", border: "1px solid var(--border)" }}>
+                          <div style={{ fontSize: "1.8rem", marginBottom: 6 }}>💡</div>
+                          <div style={{ fontWeight: 800, color: "var(--navy)", fontSize: "0.88rem" }}>TIPS Recall Library</div>
+                          <div style={{ fontSize: "0.72rem", color: "var(--text-3)", marginTop: 2 }}>Mnemonics & formulas</div>
+                        </div>
+                      </Link>
+
+                      <Link to="/resources" style={{ textDecoration: "none" }}>
+                        <div style={{ background: "rgba(16,28,68,0.03)", borderRadius: 14, padding: "18px 14px", textAlign: "center", border: "1px solid var(--border)" }}>
+                          <div style={{ fontSize: "1.8rem", marginBottom: 6 }}>📚</div>
+                          <div style={{ fontWeight: 800, color: "var(--navy)", fontSize: "0.88rem" }}>Resource Centre</div>
+                          <div style={{ fontSize: "0.72rem", color: "var(--text-3)", marginTop: 2 }}>Notes, PDFs & revision</div>
+                        </div>
+                      </Link>
+
+                      <Link to="/classrooms" style={{ textDecoration: "none" }}>
+                        <div style={{ background: "rgba(16,28,68,0.03)", borderRadius: 14, padding: "18px 14px", textAlign: "center", border: "1px solid var(--border)" }}>
+                          <div style={{ fontSize: "1.8rem", marginBottom: 6 }}>📹</div>
+                          <div style={{ fontWeight: 800, color: "var(--navy)", fontSize: "0.88rem" }}>Video Lessons</div>
+                          <div style={{ fontSize: "0.72rem", color: "var(--text-3)", marginTop: 2 }}>Structured courses</div>
+                        </div>
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )
             )}
+
+            {/* ── LEARNING PROGRESS (STUDENT) ── */}
+            {activeTab === "Learning Progress" && <ProgressTab />}
+
+            {/* ── CBT HISTORY (STUDENT) ── */}
+            {activeTab === "CBT History" && <CbtHistoryTab />}
+
+            {/* ── ASSIGNMENTS (STUDENT) ── */}
+            {activeTab === "Assignments" && <StudentAssignmentsTab />}
+
+            {/* ── TEACHER ASSIGNMENTS MANAGER ── */}
+            {activeTab === "Assignments Manager" && <TeacherAssignmentsTab />}
+
+            {/* ── TEACHER QUESTION BANK ── */}
+            {activeTab === "Question Bank" && <TeacherQuestionBankTab />}
 
             {/* ── MY COURSES / MY CLASSES ── */}
             {(activeTab === "My Courses" || activeTab === "My Classes") && (
-              <div>
-                <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.25rem", fontWeight: 800, color: "var(--navy)", marginBottom: 20 }}>
-                  {user.role === "TEACHER" ? "My Classes" : "Enrolled Courses"}
-                </h3>
-                <div className="dash-card" style={{ padding: "40px", textAlign: "center", color: "var(--text-3)" }}>
-                  <div style={{ fontSize: "3rem", marginBottom: 10 }}>📭</div>
-                  <p style={{ margin: 0, fontWeight: 500 }}>
-                    {user.role === "TEACHER" ? "You haven't created any classes yet." : "You haven't enrolled in any courses yet."}
-                  </p>
-                  {user.role !== "TEACHER" && (
-                    <Link to="/classrooms" className="btn-primary" style={{ display: "inline-flex", marginTop: 20 }}>Browse Courses</Link>
-                  )}
-                </div>
+              <div className="dash-card" style={{ padding: "36px", textAlign: "center" }}>
+                <div style={{ fontSize: "2.8rem", marginBottom: 12 }}>📚</div>
+                <h4 style={{ fontFamily: "var(--font-h)", color: "var(--navy)", margin: "0 0 8px" }}>Video Classrooms</h4>
+                <p style={{ color: "var(--text-2)", fontSize: "0.9rem", margin: "0 0 18px" }}>
+                  Browse structured syllabus courses and track lesson progress.
+                </p>
+                <Link to="/classrooms" style={{ display: "inline-block", padding: "10px 22px", background: "var(--navy)", color: "#ffffff", borderRadius: 10, textDecoration: "none", fontWeight: 800 }}>
+                  Browse Video Classrooms →
+                </Link>
               </div>
             )}
 
@@ -956,28 +1909,11 @@ export default function ProfilePage() {
             {/* ── GROUPS ── */}
             {activeTab === "Groups" && <GroupsTab authUser={authUser} />}
 
-            {/* ── CERTIFICATES ── */}
-            {activeTab === "Certificates" && (
-              <div>
-                <h3 style={{ fontFamily: "var(--font-h)", fontSize: "1.25rem", fontWeight: 800, color: "var(--navy)", marginBottom: 20 }}>
-                  My Certificates
-                </h3>
-                <div className="dash-card" style={{ textAlign: "center", padding: "40px", color: "var(--text-3)" }}>
-                  <div style={{ fontSize: "3rem", marginBottom: 10 }}>🏅</div>
-                  <p style={{ margin: 0, fontWeight: 500 }}>You haven't earned any certificates yet.</p>
-                  <p style={{ fontSize: "0.85rem", marginTop: 8 }}>Complete a course to earn your first certificate!</p>
-                  <Link to="/classrooms" className="btn-primary" style={{ display: "inline-flex", marginTop: 20 }}>Browse Courses</Link>
-                </div>
-              </div>
-            )}
-
             {/* ── NOTIFICATIONS ── */}
-            {activeTab === "Notifications" && <NotificationsTab authUser={authUser} />}
+            {activeTab === "Notifications" && <NotificationsTab />}
 
             {/* ── SETTINGS ── */}
-            {activeTab === "Settings" && (
-              <SettingsTab authUser={authUser} />
-            )}
+            {activeTab === "Settings" && <SettingsTab authUser={authUser} />}
           </div>
         </div>
       </div>

@@ -5,7 +5,7 @@ const sanitizeUser = require('../utils/sanitizeUser');
 
 async function register(req, res) {
   try {
-    const { email, password, fullName, phone, dateOfBirth, role, avatarUrl } = req.body;
+    const { email, password, fullName, phone, dateOfBirth, role, avatarUrl, targetClass, selectedSubjects } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
@@ -31,7 +31,9 @@ async function register(req, res) {
             fullName,
             phone,
             dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-            avatarUrl: avatarUrl || null
+            avatarUrl: avatarUrl || null,
+            targetClass: targetClass || null,
+            selectedSubjects: selectedSubjects || null
           }
         }
       },

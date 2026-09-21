@@ -12,6 +12,7 @@ const NAV_ITEMS = [
 ];
 
 const TEACHER_ITEMS = [
+  { to: '/teacher', icon: '🏫', label: 'Teacher Portal' },
   { to: '/classrooms', icon: '🎓', label: 'My Classrooms' },
 ];
 

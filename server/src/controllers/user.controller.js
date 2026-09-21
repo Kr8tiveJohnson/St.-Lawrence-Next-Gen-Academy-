@@ -19,15 +19,17 @@ async function getMe(req, res) {
  */
 async function updateProfile(req, res) {
   try {
-    const { fullName, phone, dateOfBirth } = req.body;
+    const { fullName, phone, dateOfBirth, targetClass, selectedSubjects } = req.body;
     const userId = req.user.id;
 
     const updatedProfile = await prisma.profile.update({
       where: { userId },
       data: {
-        fullName: fullName || undefined,
-        phone: phone || undefined,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined
+        fullName: fullName !== undefined ? fullName : undefined,
+        phone: phone !== undefined ? phone : undefined,
+        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+        targetClass: targetClass !== undefined ? targetClass : undefined,
+        selectedSubjects: selectedSubjects !== undefined ? selectedSubjects : undefined
       }
     });
 

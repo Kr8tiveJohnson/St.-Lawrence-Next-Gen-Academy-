@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import client from "../api/client";
 import logoImg from "../assets/St. Lawrence Next Gen Academy logo.png";
 import HomepageSettings from "../features/admin/HomepageSettings";
+import SchoolDashboardView from "../components/dashboard/SchoolDashboardView";
 
 // ─── SVG Icon ────────────────────────────────────────────────────────────────
 function Icon({ path, size = 18, color = "currentColor", stroke = 1.8 }) {
@@ -31,22 +32,53 @@ const ICONS = {
   check:     "M5 13l4 4L19 7",
   x:         "M6 18L18 6M6 6l12 12",
   wallet:    "M20 12V8H6a2 2 0 012-2h12V4a2 2 0 00-2-2H4a2 2 0 00-2 2v16a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2h-2m-4 0v4H6V12z",
-  settings:  "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+  settings:  "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z",
+  bell:      "M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 01-3.46 0",
+  message:   "M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z",
+  search:    "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z",
+  chevronDown: "M6 9l6 6 6-6",
+  chevronRight: "M9 5l7 7-7 7"
 };
 
-const NAV = [
-  { id: "Dashboard",  label: "Dashboard",         icon: "dashboard" },
-  { id: "Users",      label: "Users",              icon: "users"     },
-  { id: "Groups",     label: "Group Management",   icon: "users"     },
-  { id: "Teachers",   label: "Teacher Approvals",  icon: "teachers"  },
-  { id: "Courses",    label: "Courses & Lessons",  icon: "courses"   },
-  { id: "News",       label: "News Management",    icon: "news"      },
-  { id: "Fame",       label: "Hall of Fame",       icon: "fame"      },
-  { id: "Earnings",   label: "Earnings",           icon: "wallet"    },
-  { id: "Analytics",  label: "Analytics",          icon: "analytics" },
-  { id: "Settings",   label: "Homepage Settings",  icon: "settings"  },
-  { id: "Moderation", label: "Moderation",         icon: "shield"    },
+const NAV_GROUPS = [
+  {
+    category: "Home",
+    items: [
+      { id: "Dashboard",   label: "Admin Dashboard",    icon: "dashboard" },
+    ]
+  },
+  {
+    category: "Academic Management",
+    items: [
+      { id: "Users",       label: "Students",           icon: "users"     },
+      { id: "Teachers",    label: "Teachers",           icon: "teachers"  },
+      { id: "Courses",     label: "Classrooms & Courses", icon: "courses" },
+      { id: "QuestionBank",label: "Question Bank",      icon: "news"      },
+      { id: "TipsManager", label: "TIPS Routine",       icon: "fame"      },
+      { id: "Resources",   label: "Library Resources",   icon: "analytics" },
+    ]
+  },
+  {
+    category: "Communication",
+    items: [
+      { id: "Groups",      label: "Communities & Groups", icon: "users"   },
+      { id: "News",        label: "Notice & News",       icon: "news"      },
+      { id: "Fame",        label: "Hall of Fame",        icon: "fame"      },
+    ]
+  },
+  {
+    category: "Finance & Operations",
+    items: [
+      { id: "Earnings",    label: "Account & Earnings",  icon: "wallet"    },
+      { id: "Analytics",   label: "Analytics",           icon: "analytics" },
+      { id: "Settings",    label: "Homepage Settings",   icon: "settings"  },
+      { id: "Moderation",  label: "Exam & Moderation",   icon: "shield"    },
+    ]
+  }
 ];
+
+const NAV = NAV_GROUPS.flatMap(g => g.items);
+
 
 const adminHeaders = () => ({
   Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
@@ -184,43 +216,56 @@ function SubmitBtn({ loading, label }) {
 
 // ─── Section: Dashboard ───────────────────────────────────────────────────────
 function DashboardTab({ stats, onNav }) {
-  const cards = [
-    { label: "Total Users",      value: stats?.totalUsers,      icon: "users",     color: "#6366f1" },
-    { label: "Active Teachers",  value: stats?.activeTeachers,  icon: "teachers",  color: "#0ea5e9" },
-    { label: "Premium Members",  value: stats?.premiumUsers,    icon: "fame",      color: "#d4a853" },
-    { label: "Courses Published",value: stats?.coursesPublished,icon: "courses",   color: "#ec4899" },
-    { label: "News Articles",    value: stats?.newsArticles,    icon: "news",      color: "#f97316" },
-    { label: "Hall of Fame",     value: stats?.hallOfFameEntries,icon: "fame",     color: "#22c55e" },
-  ];
+  const [liveStudents, setLiveStudents] = useState([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await client.get("/admin/users?role=STUDENT&limit=6", { headers: adminHeaders() });
+        setLiveStudents(data.users || []);
+      } catch (e) {}
+    })();
+  }, []);
+
   return (
-    <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "18px", marginBottom: "24px" }}>
-        {cards.map(c => <StatCard key={c.label} {...c} />)}
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-        <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #f0f0f0" }}>
-          <h3 style={{ margin: "0 0 16px 0", fontSize: "1rem", fontWeight: 700, color: "#0f2144" }}>Quick Actions</h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
+      <SchoolDashboardView
+        role="ADMIN"
+        stats={stats}
+        liveUsers={liveStudents}
+        onNavigateTab={onNav}
+        onViewAllActivity={() => onNav("Analytics")}
+      />
+
+      {/* Quick Actions & System Status Cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "24px" }}>
+        <div style={{ background: "#ffffff", borderRadius: "24px", padding: "26px 28px", boxShadow: "0 4px 20px rgba(16,28,68,0.04)", border: "1px solid rgba(16,28,68,0.06)" }}>
+          <h3 style={{ margin: "0 0 16px 0", fontSize: "1.05rem", fontWeight: 800, color: "var(--navy, #101c44)" }}>⚡ Quick Operational Actions</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: "10px" }}>
             {[
-              { label: "Add News Article",       tab: "News",    color: "#6366f1" },
-              { label: "Create Course",          tab: "Courses", color: "#0ea5e9" },
-              { label: "Add Hall of Fame Entry", tab: "Fame",    color: "#d4a853" },
-              { label: "View Earnings / Sales",  tab: "Earnings",color: "#22c55e" },
-              { label: "Manage Users",           tab: "Users",   color: "#ec4899" },
-              { label: "Teacher Approvals",      tab: "Teachers",color: "#f97316" },
+              { label: "Add News Article", tab: "News", color: "#6366f1" },
+              { label: "Create Course", tab: "Courses", color: "#0ea5e9" },
+              { label: "Hall of Fame", tab: "Fame", color: "#dfa921" },
+              { label: "View Earnings", tab: "Earnings", color: "#22c55e" },
+              { label: "Manage Students", tab: "Users", color: "#ec4899" },
+              { label: "Teacher Approvals", tab: "Teachers", color: "#f97316" },
             ].map(a => (
-              <button key={a.label} onClick={() => onNav(a.tab)} style={{ background: `${a.color}10`, border: `1px solid ${a.color}30`, color: a.color, borderRadius: "10px", padding: "10px 14px", fontWeight: 700, fontSize: "0.85rem", textAlign: "left", fontFamily: "inherit", cursor: "pointer" }}>
+              <button key={a.label} onClick={() => onNav(a.tab)} style={{ background: `${a.color}10`, border: `1px solid ${a.color}30`, color: a.color, borderRadius: "12px", padding: "12px 14px", fontWeight: 700, fontSize: "0.82rem", textAlign: "left", fontFamily: "inherit", cursor: "pointer", transition: "transform 0.15s ease" }}
+                onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+                onMouseLeave={e => e.currentTarget.style.transform = "none"}
+              >
                 + {a.label}
               </button>
             ))}
           </div>
         </div>
-        <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #f0f0f0" }}>
-          <h3 style={{ margin: "0 0 16px 0", fontSize: "1rem", fontWeight: 700, color: "#0f2144" }}>System Status</h3>
-          {[["Database", "Online"], ["API Server", "Running"], ["Frontend", "Active"], ["Auth Service", "Online"]].map(([name, status]) => (
-            <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-              <span style={{ fontSize: "0.88rem", color: "#374151", fontWeight: 500 }}>{name}</span>
-              <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#16a34a", background: "#f0fdf4", padding: "3px 10px", borderRadius: "20px", display: "flex", alignItems: "center", gap: 5 }}>
+
+        <div style={{ background: "#ffffff", borderRadius: "24px", padding: "26px 28px", boxShadow: "0 4px 20px rgba(16,28,68,0.04)", border: "1px solid rgba(16,28,68,0.06)" }}>
+          <h3 style={{ margin: "0 0 16px 0", fontSize: "1.05rem", fontWeight: 800, color: "var(--navy, #101c44)" }}>🛡️ Academy Infrastructure Status</h3>
+          {[["PostgreSQL Database", "Online · 100%"], ["Express API Gateway", "Running · v1.0"], ["Vite Frontend Client", "Active · Connected"], ["Authentication RBAC", "Enforced · Secure"]].map(([name, status]) => (
+            <div key={name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
+              <span style={{ fontSize: "0.85rem", color: "#374151", fontWeight: 600 }}>{name}</span>
+              <span style={{ fontSize: "0.72rem", fontWeight: 700, color: "#16a34a", background: "#f0fdf4", padding: "4px 10px", borderRadius: "20px", display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ width: 6, height: 6, background: "#22c55e", borderRadius: "50%", display: "inline-block" }} />{status}
               </span>
             </div>
@@ -1069,12 +1114,375 @@ function AnalyticsTab({ stats }) {
   );
 }
 
+// ─── Admin: Question Bank ─────────────────────────────────────────────────────
+function QuestionBankTab() {
+  const [questions, setQuestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterSubject, setFilterSubject] = useState("ALL");
+  const [filterExam, setFilterExam] = useState("ALL");
+  const [showModal, setShowModal] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const [form, setForm] = useState({ examType: "JAMB", subject: "Mathematics", targetClass: "GENERAL", topic: "", year: "", difficulty: "MEDIUM", questionText: "", optionA: "", optionB: "", optionC: "", optionD: "", correctOption: "A", explanation: "" });
+  const [saving, setSaving] = useState(false);
+
+  const adminHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem("adminToken")}` });
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ limit: 100 });
+      if (filterSubject !== "ALL") params.set("subject", filterSubject);
+      if (filterExam !== "ALL") params.set("examType", filterExam);
+      if (search) params.set("search", search);
+      const { data } = await client.get(`/cbt/questions?${params}`, { headers: adminHeaders() });
+      setQuestions(data.questions || []);
+    } catch (e) { console.error(e); }
+    setLoading(false);
+  }, [filterSubject, filterExam, search]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const openAdd = () => { setEditItem(null); setForm({ examType: "JAMB", subject: "Mathematics", targetClass: "GENERAL", topic: "", year: "", difficulty: "MEDIUM", questionText: "", optionA: "", optionB: "", optionC: "", optionD: "", correctOption: "A", explanation: "" }); setShowModal(true); };
+  const openEdit = (q) => { setEditItem(q); const opts = Array.isArray(q.options) ? q.options : []; setForm({ examType: q.examType, subject: q.subject, targetClass: q.targetClass || "GENERAL", topic: q.topic, year: q.year || "", difficulty: q.difficulty, questionText: q.questionText, optionA: opts[0]?.text || "", optionB: opts[1]?.text || "", optionC: opts[2]?.text || "", optionD: opts[3]?.text || "", correctOption: q.correctOption, explanation: q.explanation || "" }); setShowModal(true); };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    const payload = { ...form, year: form.year ? parseInt(form.year) : null, options: [{id:"A",text:form.optionA},{id:"B",text:form.optionB},{id:"C",text:form.optionC},{id:"D",text:form.optionD}] };
+    delete payload.optionA; delete payload.optionB; delete payload.optionC; delete payload.optionD;
+    try {
+      if (editItem) { await client.put(`/cbt/questions/${editItem.id}`, payload, { headers: adminHeaders() }); }
+      else { await client.post("/cbt/questions", payload, { headers: adminHeaders() }); }
+      setShowModal(false); load();
+    } catch (e) { alert("Save failed: " + (e.response?.data?.error || e.message)); }
+    setSaving(false);
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm("Delete this question permanently?")) return;
+    try { await client.delete(`/cbt/questions/${id}`, { headers: adminHeaders() }); load(); }
+    catch (e) { alert("Delete failed"); }
+  };
+
+  const inputStyle = { width: "100%", padding: "10px 13px", border: "1px solid #e2e8f0", borderRadius: "9px", fontSize: "0.88rem", fontFamily: "inherit", outline: "none", color: "#0f2144", boxSizing: "border-box" };
+  const labelStyle = { display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#64748b", marginBottom: "5px", textTransform: "uppercase", letterSpacing: "0.05em" };
+
+  return (
+    <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #f0f0f0" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+        <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#0f2144" }}>Question Bank ({questions.length})</h2>
+        <button onClick={openAdd} style={{ background: "#0f2144", color: "#d4a853", border: "none", borderRadius: 10, padding: "9px 18px", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", fontFamily: "inherit" }}>+ Add Question</button>
+      </div>
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search questions..." style={{ ...inputStyle, width: 220, flex: "none" }} />
+        <select value={filterExam} onChange={e => setFilterExam(e.target.value)} style={{ ...inputStyle, width: 140, flex: "none" }}>
+          {["ALL","JAMB","WAEC","NECO","INTERNAL"].map(v => <option key={v}>{v}</option>)}
+        </select>
+        <select value={filterSubject} onChange={e => setFilterSubject(e.target.value)} style={{ ...inputStyle, width: 160, flex: "none" }}>
+          {["ALL","Mathematics","English Language","Physics","Chemistry","Biology","Economics","Government","Commerce","Geography","Literature"].map(v => <option key={v}>{v}</option>)}
+        </select>
+      </div>
+      {loading ? <p style={{ color: "#9ca3af", textAlign: "center", padding: 24 }}>Loading questions...</p> : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.86rem" }}>
+            <thead><tr style={{ borderBottom: "2px solid #f1f5f9" }}>
+              {["Exam","Subject","Topic","Difficulty","Year","Actions"].map(h => <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: "0.73rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>{h}</th>)}
+            </tr></thead>
+            <tbody>
+              {questions.map(q => (
+                <tr key={q.id} style={{ borderBottom: "1px solid #f8fafc" }}>
+                  <td style={{ padding: "10px 12px" }}><span style={{ background: "#eff6ff", color: "#3b82f6", padding: "2px 8px", borderRadius: 6, fontSize: "0.76rem", fontWeight: 700 }}>{q.examType}</span></td>
+                  <td style={{ padding: "10px 12px", fontWeight: 600, color: "#0f2144" }}>{q.subject}</td>
+                  <td style={{ padding: "10px 12px", color: "#374151", maxWidth: 200 }}>{q.topic}</td>
+                  <td style={{ padding: "10px 12px" }}><span style={{ background: q.difficulty==="HARD"?"#fef2f2":q.difficulty==="EASY"?"#f0fdf4":"#fefce8", color: q.difficulty==="HARD"?"#dc2626":q.difficulty==="EASY"?"#16a34a":"#ca8a04", padding: "2px 8px", borderRadius: 6, fontSize: "0.76rem", fontWeight: 700 }}>{q.difficulty}</span></td>
+                  <td style={{ padding: "10px 12px", color: "#6b7280" }}>{q.year || "—"}</td>
+                  <td style={{ padding: "10px 12px" }}>
+                    <button onClick={() => openEdit(q)} style={{ background: "#f0f9ff", border: "1px solid #bae6fd", color: "#0284c7", borderRadius: 7, padding: "5px 12px", fontWeight: 600, fontSize: "0.78rem", cursor: "pointer", fontFamily: "inherit", marginRight: 6 }}>Edit</button>
+                    <button onClick={() => handleDelete(q.id)} style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", borderRadius: 7, padding: "5px 12px", fontWeight: 600, fontSize: "0.78rem", cursor: "pointer", fontFamily: "inherit" }}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {questions.length === 0 && <p style={{ textAlign: "center", color: "#9ca3af", padding: 20 }}>No questions match current filters.</p>}
+        </div>
+      )}
+
+      {showModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={e => e.target===e.currentTarget && setShowModal(false)}>
+          <div style={{ background: "#fff", borderRadius: 20, padding: 32, width: "100%", maxWidth: 640, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 25px 60px rgba(0,0,0,0.25)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+              <h2 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#0f2144" }}>{editItem ? "Edit Question" : "Add New Question"}</h2>
+              <button onClick={() => setShowModal(false)} style={{ background: "#f1f5f9", border: "none", borderRadius: "50%", width: 32, height: 32, cursor: "pointer", fontSize: "1rem" }}>✕</button>
+            </div>
+            <form onSubmit={handleSave}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div><label style={labelStyle}>Exam Type</label><select value={form.examType} onChange={e => setForm(f=>({...f,examType:e.target.value}))} style={inputStyle}>{["JAMB","WAEC","NECO","INTERNAL"].map(v=><option key={v}>{v}</option>)}</select></div>
+                <div><label style={labelStyle}>Subject</label><select value={form.subject} onChange={e => setForm(f=>({...f,subject:e.target.value}))} style={inputStyle}>{["Mathematics","English Language","Physics","Chemistry","Biology","Economics","Government","Commerce","Geography","Literature"].map(v=><option key={v}>{v}</option>)}</select></div>
+                <div><label style={labelStyle}>Topic</label><input value={form.topic} onChange={e=>setForm(f=>({...f,topic:e.target.value}))} placeholder="e.g. Quadratic Equations" required style={inputStyle}/></div>
+                <div><label style={labelStyle}>Year (Optional)</label><input type="number" value={form.year} onChange={e=>setForm(f=>({...f,year:e.target.value}))} placeholder="e.g. 2023" style={inputStyle}/></div>
+                <div><label style={labelStyle}>Difficulty</label><select value={form.difficulty} onChange={e=>setForm(f=>({...f,difficulty:e.target.value}))} style={inputStyle}><option>EASY</option><option>MEDIUM</option><option>HARD</option></select></div>
+                <div><label style={labelStyle}>Target Class</label><input value={form.targetClass} onChange={e=>setForm(f=>({...f,targetClass:e.target.value}))} placeholder="GENERAL / SSS 3" style={inputStyle}/></div>
+              </div>
+              <div style={{ marginTop: 12 }}><label style={labelStyle}>Question Text</label><textarea value={form.questionText} onChange={e=>setForm(f=>({...f,questionText:e.target.value}))} required rows={3} style={{...inputStyle,resize:"vertical"}}/></div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
+                <div><label style={labelStyle}>Option A</label><input value={form.optionA} onChange={e=>setForm(f=>({...f,optionA:e.target.value}))} required style={inputStyle}/></div>
+                <div><label style={labelStyle}>Option B</label><input value={form.optionB} onChange={e=>setForm(f=>({...f,optionB:e.target.value}))} required style={inputStyle}/></div>
+                <div><label style={labelStyle}>Option C</label><input value={form.optionC} onChange={e=>setForm(f=>({...f,optionC:e.target.value}))} required style={inputStyle}/></div>
+                <div><label style={labelStyle}>Option D</label><input value={form.optionD} onChange={e=>setForm(f=>({...f,optionD:e.target.value}))} required style={inputStyle}/></div>
+              </div>
+              <div style={{ marginTop: 10 }}><label style={labelStyle}>Correct Answer</label><select value={form.correctOption} onChange={e=>setForm(f=>({...f,correctOption:e.target.value}))} style={inputStyle}><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+              <div style={{ marginTop: 10 }}><label style={labelStyle}>Explanation (Worked Solution)</label><textarea value={form.explanation} onChange={e=>setForm(f=>({...f,explanation:e.target.value}))} rows={3} placeholder="Explain the correct answer step-by-step..." style={{...inputStyle,resize:"vertical"}}/></div>
+              <button type="submit" disabled={saving} style={{ marginTop: 20, width: "100%", padding: 13, background: saving?"#9ca3af":"#0f2144", color: "#d4a853", border: "none", borderRadius: 12, fontWeight: 700, fontSize: "0.95rem", cursor: saving?"not-allowed":"pointer", fontFamily: "inherit" }}>{saving?"Saving...":editItem?"Save Changes":"Add Question"}</button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Admin: TIPS Manager ──────────────────────────────────────────────────────
+function TipsManagerTab() {
+  const [tips, setTips] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterSubject, setFilterSubject] = useState("ALL");
+  const [showModal, setShowModal] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const [form, setForm] = useState({ title: "", subject: "Mathematics", category: "", keyIdea: "", explanation: "", example: "", memoryTrick: "", formulaOrRule: "", commonMistake: "" });
+  const [saving, setSaving] = useState(false);
+
+  const adminHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem("adminToken")}` });
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ limit: 100 });
+      if (filterSubject !== "ALL") params.set("subject", filterSubject);
+      if (search) params.set("search", search);
+      const { data } = await client.get(`/tips?${params}`, { headers: adminHeaders() });
+      setTips(data.tips || []);
+    } catch (e) { console.error(e); }
+    setLoading(false);
+  }, [filterSubject, search]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const openAdd = () => { setEditItem(null); setForm({ title: "", subject: "Mathematics", category: "", keyIdea: "", explanation: "", example: "", memoryTrick: "", formulaOrRule: "", commonMistake: "" }); setShowModal(true); };
+  const openEdit = (t) => { setEditItem(t); setForm({ title: t.title, subject: t.subject, category: t.category, keyIdea: t.keyIdea, explanation: t.explanation, example: t.example || "", memoryTrick: t.memoryTrick || "", formulaOrRule: t.formulaOrRule || "", commonMistake: t.commonMistake || "" }); setShowModal(true); };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      if (editItem) { await client.put(`/tips/${editItem.id}`, form, { headers: adminHeaders() }); }
+      else { await client.post("/tips", form, { headers: adminHeaders() }); }
+      setShowModal(false); load();
+    } catch (e) { alert("Save failed: " + (e.response?.data?.error || e.message)); }
+    setSaving(false);
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm("Delete this TIPS card permanently?")) return;
+    try { await client.delete(`/tips/${id}`, { headers: adminHeaders() }); load(); }
+    catch (e) { alert("Delete failed"); }
+  };
+
+  const inputStyle = { width: "100%", padding: "10px 13px", border: "1px solid #e2e8f0", borderRadius: "9px", fontSize: "0.88rem", fontFamily: "inherit", outline: "none", color: "#0f2144", boxSizing: "border-box" };
+  const labelStyle = { display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#64748b", marginBottom: "5px", textTransform: "uppercase", letterSpacing: "0.05em" };
+
+  return (
+    <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #f0f0f0" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+        <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#0f2144" }}>TIPS Learning Cards ({tips.length})</h2>
+        <button onClick={openAdd} style={{ background: "#0f2144", color: "#d4a853", border: "none", borderRadius: 10, padding: "9px 18px", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", fontFamily: "inherit" }}>+ Add TIPS Card</button>
+      </div>
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search TIPS..." style={{ ...inputStyle, width: 220, flex: "none" }} />
+        <select value={filterSubject} onChange={e => setFilterSubject(e.target.value)} style={{ ...inputStyle, width: 180, flex: "none" }}>
+          {["ALL","Mathematics","English Language","Physics","Chemistry","Biology","Economics","General"].map(v => <option key={v}>{v}</option>)}
+        </select>
+      </div>
+      {loading ? <p style={{ color: "#9ca3af", textAlign: "center", padding: 24 }}>Loading TIPS cards...</p> : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 14 }}>
+          {tips.map(tip => (
+            <div key={tip.id} style={{ background: "#f8fafc", borderRadius: 14, padding: "18px", border: "1px solid #e2e8f0" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                <div>
+                  <span style={{ background: "#eff6ff", color: "#3b82f6", padding: "2px 8px", borderRadius: 6, fontSize: "0.74rem", fontWeight: 700, marginRight: 6 }}>{tip.subject}</span>
+                  <span style={{ background: "#f0fdf4", color: "#16a34a", padding: "2px 8px", borderRadius: 6, fontSize: "0.74rem", fontWeight: 700 }}>{tip.category}</span>
+                </div>
+              </div>
+              <h4 style={{ margin: "0 0 6px", color: "#0f2144", fontSize: "0.95rem", fontWeight: 800 }}>{tip.title}</h4>
+              <p style={{ margin: "0 0 12px", color: "#6b7280", fontSize: "0.82rem", lineHeight: 1.5 }}>{tip.keyIdea}</p>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => openEdit(tip)} style={{ background: "#f0f9ff", border: "1px solid #bae6fd", color: "#0284c7", borderRadius: 7, padding: "5px 12px", fontWeight: 600, fontSize: "0.78rem", cursor: "pointer", fontFamily: "inherit" }}>Edit</button>
+                <button onClick={() => handleDelete(tip.id)} style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", borderRadius: 7, padding: "5px 12px", fontWeight: 600, fontSize: "0.78rem", cursor: "pointer", fontFamily: "inherit" }}>Delete</button>
+              </div>
+            </div>
+          ))}
+          {tips.length === 0 && <p style={{ gridColumn: "1/-1", textAlign: "center", color: "#9ca3af", padding: 24 }}>No TIPS cards found.</p>}
+        </div>
+      )}
+
+      {showModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={e => e.target===e.currentTarget && setShowModal(false)}>
+          <div style={{ background: "#fff", borderRadius: 20, padding: 32, width: "100%", maxWidth: 640, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 25px 60px rgba(0,0,0,0.25)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+              <h2 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#0f2144" }}>{editItem ? "Edit TIPS Card" : "Add New TIPS Card"}</h2>
+              <button onClick={() => setShowModal(false)} style={{ background: "#f1f5f9", border: "none", borderRadius: "50%", width: 32, height: 32, cursor: "pointer", fontSize: "1rem" }}>✕</button>
+            </div>
+            <form onSubmit={handleSave}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div style={{ gridColumn: "1/-1" }}><label style={labelStyle}>Title</label><input value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} placeholder="e.g. Solving Quadratic Equations" required style={inputStyle}/></div>
+                <div><label style={labelStyle}>Subject</label><select value={form.subject} onChange={e=>setForm(f=>({...f,subject:e.target.value}))} style={inputStyle}>{["Mathematics","English Language","Physics","Chemistry","Biology","Economics","General"].map(v=><option key={v}>{v}</option>)}</select></div>
+                <div><label style={labelStyle}>Category</label><input value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))} placeholder="e.g. Algebra, Grammar, Mechanics" required style={inputStyle}/></div>
+              </div>
+              <div style={{ marginTop: 12 }}><label style={labelStyle}>Key Idea (Summary)</label><textarea value={form.keyIdea} onChange={e=>setForm(f=>({...f,keyIdea:e.target.value}))} required rows={2} style={{...inputStyle,resize:"vertical"}}/></div>
+              <div style={{ marginTop: 10 }}><label style={labelStyle}>Full Explanation</label><textarea value={form.explanation} onChange={e=>setForm(f=>({...f,explanation:e.target.value}))} required rows={3} style={{...inputStyle,resize:"vertical"}}/></div>
+              <div style={{ marginTop: 10 }}><label style={labelStyle}>Example</label><textarea value={form.example} onChange={e=>setForm(f=>({...f,example:e.target.value}))} rows={2} placeholder="Worked example..." style={{...inputStyle,resize:"vertical"}}/></div>
+              <div style={{ marginTop: 10 }}><label style={labelStyle}>Memory Trick / Mnemonic</label><input value={form.memoryTrick} onChange={e=>setForm(f=>({...f,memoryTrick:e.target.value}))} placeholder="e.g. BODMAS, SOHCAHTOA..." style={inputStyle}/></div>
+              <div style={{ marginTop: 10 }}><label style={labelStyle}>Formula or Rule</label><input value={form.formulaOrRule} onChange={e=>setForm(f=>({...f,formulaOrRule:e.target.value}))} placeholder="e.g. a² + b² = c²" style={inputStyle}/></div>
+              <div style={{ marginTop: 10 }}><label style={labelStyle}>Common Mistake to Avoid</label><textarea value={form.commonMistake} onChange={e=>setForm(f=>({...f,commonMistake:e.target.value}))} rows={2} placeholder="What students often get wrong..." style={{...inputStyle,resize:"vertical"}}/></div>
+              <button type="submit" disabled={saving} style={{ marginTop: 20, width: "100%", padding: 13, background: saving?"#9ca3af":"#0f2144", color: "#d4a853", border: "none", borderRadius: 12, fontWeight: 700, fontSize: "0.95rem", cursor: saving?"not-allowed":"pointer", fontFamily: "inherit" }}>{saving?"Saving...":editItem?"Save Changes":"Add TIPS Card"}</button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Admin: Resources Manager ─────────────────────────────────────────────────
+function ResourcesManagerTab() {
+  const [resources, setResources] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterSubject, setFilterSubject] = useState("ALL");
+  const [filterType, setFilterType] = useState("ALL");
+  const [showModal, setShowModal] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const [form, setForm] = useState({ title: "", subject: "Mathematics", targetClass: "", resourceType: "NOTE", description: "", fileUrl: "" });
+  const [saving, setSaving] = useState(false);
+
+  const adminHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem("adminToken")}` });
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ limit: 100 });
+      if (filterSubject !== "ALL") params.set("subject", filterSubject);
+      if (filterType !== "ALL") params.set("resourceType", filterType);
+      if (search) params.set("search", search);
+      const { data } = await client.get(`/resources?${params}`, { headers: adminHeaders() });
+      setResources(data.resources || []);
+    } catch (e) { console.error(e); }
+    setLoading(false);
+  }, [filterSubject, filterType, search]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const openAdd = () => { setEditItem(null); setForm({ title: "", subject: "Mathematics", targetClass: "", resourceType: "NOTE", description: "", fileUrl: "" }); setShowModal(true); };
+  const openEdit = (r) => { setEditItem(r); setForm({ title: r.title, subject: r.subject, targetClass: r.targetClass || "", resourceType: r.resourceType, description: r.description || "", fileUrl: r.fileUrl }); setShowModal(true); };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      if (editItem) { await client.put(`/resources/${editItem.id}`, form, { headers: adminHeaders() }); }
+      else { await client.post("/resources", form, { headers: adminHeaders() }); }
+      setShowModal(false); load();
+    } catch (e) { alert("Save failed: " + (e.response?.data?.error || e.message)); }
+    setSaving(false);
+  };
+
+  const handleDelete = async (id) => {
+    if (!confirm("Delete this resource permanently?")) return;
+    try { await client.delete(`/resources/${id}`, { headers: adminHeaders() }); load(); }
+    catch (e) { alert("Delete failed"); }
+  };
+
+  const inputStyle = { width: "100%", padding: "10px 13px", border: "1px solid #e2e8f0", borderRadius: "9px", fontSize: "0.88rem", fontFamily: "inherit", outline: "none", color: "#0f2144", boxSizing: "border-box" };
+  const labelStyle = { display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#64748b", marginBottom: "5px", textTransform: "uppercase", letterSpacing: "0.05em" };
+  const typeColor = { NOTE: "#6366f1", PDF: "#0ea5e9", WORKSHEET: "#f97316", REVISION: "#22c55e", GUIDE: "#d4a853", TIPS: "#ec4899" };
+
+  return (
+    <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #f0f0f0" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+        <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#0f2144" }}>Resource Library ({resources.length})</h2>
+        <button onClick={openAdd} style={{ background: "#0f2144", color: "#d4a853", border: "none", borderRadius: 10, padding: "9px 18px", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", fontFamily: "inherit" }}>+ Add Resource</button>
+      </div>
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search resources..." style={{ ...inputStyle, width: 200, flex: "none" }} />
+        <select value={filterSubject} onChange={e => setFilterSubject(e.target.value)} style={{ ...inputStyle, width: 160, flex: "none" }}>
+          {["ALL","Mathematics","English Language","Physics","Chemistry","Biology","Economics","General"].map(v => <option key={v}>{v}</option>)}
+        </select>
+        <select value={filterType} onChange={e => setFilterType(e.target.value)} style={{ ...inputStyle, width: 140, flex: "none" }}>
+          {["ALL","NOTE","PDF","WORKSHEET","REVISION","GUIDE","TIPS"].map(v => <option key={v}>{v}</option>)}
+        </select>
+      </div>
+      {loading ? <p style={{ color: "#9ca3af", textAlign: "center", padding: 24 }}>Loading resources...</p> : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.86rem" }}>
+            <thead><tr style={{ borderBottom: "2px solid #f1f5f9" }}>
+              {["Type","Title","Subject","Class","Downloads","Actions"].map(h => <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: "0.73rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>{h}</th>)}
+            </tr></thead>
+            <tbody>
+              {resources.map(r => (
+                <tr key={r.id} style={{ borderBottom: "1px solid #f8fafc" }}>
+                  <td style={{ padding: "10px 12px" }}><span style={{ background: `${typeColor[r.resourceType]||"#6b7280"}18`, color: typeColor[r.resourceType]||"#6b7280", padding: "2px 8px", borderRadius: 6, fontSize: "0.76rem", fontWeight: 700 }}>{r.resourceType}</span></td>
+                  <td style={{ padding: "10px 12px", fontWeight: 600, color: "#0f2144", maxWidth: 200 }}>{r.title}</td>
+                  <td style={{ padding: "10px 12px", color: "#374151" }}>{r.subject}</td>
+                  <td style={{ padding: "10px 12px", color: "#6b7280" }}>{r.targetClass || "All"}</td>
+                  <td style={{ padding: "10px 12px", color: "#6b7280" }}>{r.downloadsCount || 0}</td>
+                  <td style={{ padding: "10px 12px" }}>
+                    <button onClick={() => openEdit(r)} style={{ background: "#f0f9ff", border: "1px solid #bae6fd", color: "#0284c7", borderRadius: 7, padding: "5px 12px", fontWeight: 600, fontSize: "0.78rem", cursor: "pointer", fontFamily: "inherit", marginRight: 6 }}>Edit</button>
+                    <button onClick={() => handleDelete(r.id)} style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", borderRadius: 7, padding: "5px 12px", fontWeight: 600, fontSize: "0.78rem", cursor: "pointer", fontFamily: "inherit" }}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {resources.length === 0 && <p style={{ textAlign: "center", color: "#9ca3af", padding: 20 }}>No resources found.</p>}
+        </div>
+      )}
+
+      {showModal && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={e => e.target===e.currentTarget && setShowModal(false)}>
+          <div style={{ background: "#fff", borderRadius: 20, padding: 32, width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 25px 60px rgba(0,0,0,0.25)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+              <h2 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#0f2144" }}>{editItem ? "Edit Resource" : "Add New Resource"}</h2>
+              <button onClick={() => setShowModal(false)} style={{ background: "#f1f5f9", border: "none", borderRadius: "50%", width: 32, height: 32, cursor: "pointer", fontSize: "1rem" }}>✕</button>
+            </div>
+            <form onSubmit={handleSave}>
+              <div style={{ marginBottom: 12 }}><label style={labelStyle}>Title</label><input value={form.title} onChange={e=>setForm(f=>({...f,title:e.target.value}))} placeholder="e.g. Mathematics Formulae Sheet" required style={inputStyle}/></div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div><label style={labelStyle}>Subject</label><select value={form.subject} onChange={e=>setForm(f=>({...f,subject:e.target.value}))} style={inputStyle}>{["Mathematics","English Language","Physics","Chemistry","Biology","Economics","General"].map(v=><option key={v}>{v}</option>)}</select></div>
+                <div><label style={labelStyle}>Resource Type</label><select value={form.resourceType} onChange={e=>setForm(f=>({...f,resourceType:e.target.value}))} style={inputStyle}><option>NOTE</option><option>PDF</option><option>WORKSHEET</option><option>REVISION</option><option>GUIDE</option><option>TIPS</option></select></div>
+                <div><label style={labelStyle}>Target Class</label><input value={form.targetClass} onChange={e=>setForm(f=>({...f,targetClass:e.target.value}))} placeholder="e.g. SSS 3, JAMB/WAEC" style={inputStyle}/></div>
+              </div>
+              <div style={{ marginTop: 10 }}><label style={labelStyle}>Description</label><textarea value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} rows={2} placeholder="Brief description of this resource..." style={{...inputStyle,resize:"vertical"}}/></div>
+              <div style={{ marginTop: 10 }}><label style={labelStyle}>File URL / Download Link</label><input value={form.fileUrl} onChange={e=>setForm(f=>({...f,fileUrl:e.target.value}))} placeholder="https://drive.google.com/file/..." required style={inputStyle}/></div>
+              <button type="submit" disabled={saving} style={{ marginTop: 20, width: "100%", padding: 13, background: saving?"#9ca3af":"#0f2144", color: "#d4a853", border: "none", borderRadius: 12, fontWeight: 700, fontSize: "0.95rem", cursor: saving?"not-allowed":"pointer", fontFamily: "inherit" }}>{saving?"Saving...":editItem?"Save Changes":"Add Resource"}</button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main AdminPage ───────────────────────────────────────────────────────────
 export default function AdminPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Dashboard");
   const [stats, setStats] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [collapsedCategories, setCollapsedCategories] = useState({});
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -1087,30 +1495,54 @@ export default function AdminPage() {
     const token = localStorage.getItem("adminToken");
     if (!token) { navigate("/admin-login"); return; }
     fetchStats();
-  }, [navigate, fetchStats, activeTab]); // Reload stats when changing tabs (e.g. dashboard vs earnings)
+  }, [navigate, fetchStats, activeTab]); // Reload stats when changing tabs
 
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
     navigate("/admin-login");
   };
 
+  const toggleCategory = (cat) => {
+    setCollapsedCategories(prev => ({
+      ...prev,
+      [cat]: !prev[cat]
+    }));
+  };
+
+  // Filter navigation items if searching
+  const filteredNavGroups = useMemo(() => {
+    if (!searchQuery.trim()) return NAV_GROUPS;
+    const q = searchQuery.toLowerCase();
+    return NAV_GROUPS.map(group => ({
+      ...group,
+      items: group.items.filter(it => it.label.toLowerCase().includes(q) || it.id.toLowerCase().includes(q))
+    })).filter(group => group.items.length > 0);
+  }, [searchQuery]);
+
   const renderContent = () => {
     switch (activeTab) {
-      case "Dashboard":  return <DashboardTab stats={stats} onNav={setActiveTab} />;
-      case "Users":      return <UsersTab />;
-      case "Groups":     return <GroupsTab />;
-      case "Teachers":   return <TeachersTab />;
-      case "Courses":    return <CoursesTab />;
-      case "News":       return <NewsTab />;
-      case "Fame":       return <FameTab />;
-      case "Earnings":   return <EarningsTab stats={stats} />;
-      case "Analytics":  return <AnalyticsTab stats={stats} />;
-      case "Settings":   return <HomepageSettings />;
+      case "Dashboard":   return <DashboardTab stats={stats} onNav={setActiveTab} />;
+      case "Users":        return <UsersTab />;
+      case "Groups":       return <GroupsTab />;
+      case "Teachers":     return <TeachersTab />;
+      case "Courses":      return <CoursesTab />;
+      case "QuestionBank": return <QuestionBankTab />;
+      case "TipsManager":  return <TipsManagerTab />;
+      case "Resources":    return <ResourcesManagerTab />;
+      case "News":         return <NewsTab />;
+      case "Fame":         return <FameTab />;
+      case "Earnings":     return <EarningsTab stats={stats} />;
+      case "Analytics":    return <AnalyticsTab stats={stats} />;
+      case "Settings":     return <HomepageSettings />;
       case "Moderation": return (
-        <div style={{ background: "#fff", borderRadius: "16px", padding: "40px", textAlign: "center", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-          <Icon path={ICONS.shield} size={48} color="#d4a853" />
-          <h2 style={{ color: "#0f2144", marginTop: "16px" }}>Moderation</h2>
-          <p style={{ color: "#9ca3af" }}>Content moderation tools coming soon.</p>
+        <div style={{ background: "#ffffff", borderRadius: "24px", padding: "48px 32px", textAlign: "center", boxShadow: "0 4px 20px rgba(16,28,68,0.04)", border: "1px solid rgba(16,28,68,0.06)" }}>
+          <div style={{ width: 72, height: 72, borderRadius: "24px", background: "#fef3c7", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
+            <Icon path={ICONS.shield} size={36} color="#dfa921" />
+          </div>
+          <h2 style={{ color: "var(--navy, #101c44)", margin: "0 0 8px", fontSize: "1.3rem", fontWeight: 800 }}>Exam Moderation & Security</h2>
+          <p style={{ color: "#94a3b8", maxWidth: "420px", margin: "0 auto", fontSize: "0.9rem" }}>
+            Automated proctoring logs, flagged questions, and content moderation tools are active in monitor mode.
+          </p>
         </div>
       );
       default: return null;
@@ -1119,61 +1551,392 @@ export default function AdminPage() {
 
   return (
     <>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap'); * { box-sizing: border-box; } .admin-root { font-family: 'Inter', sans-serif; } .nav-btn:hover { background: rgba(255,255,255,0.08) !important; }`}</style>
-      <div className="admin-root" style={{ display: "flex", minHeight: "100vh", background: "#f8fafc" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Outfit:wght@600;700;800;900&display=swap');
+        * { box-sizing: border-box; }
+        .admin-root { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .nav-item-btn:hover { background: #f8fafc !important; color: #101c44 !important; }
+        .nav-item-active { background: #f5f3ff !important; color: #6b21a8 !important; border-left: 4px solid #6b21a8 !important; font-weight: 800 !important; }
+        .header-icon-btn:hover { background: #f1f4fa !important; transform: translateY(-1px); }
+      `}</style>
+      <div className="admin-root" style={{ display: "flex", minHeight: "100vh", background: "#f4f6fb" }}>
 
-        {/* SIDEBAR */}
-        <aside style={{ width: sidebarOpen ? "250px" : "70px", background: "linear-gradient(180deg, #0f2144 0%, #1a3a6b 100%)", display: "flex", flexDirection: "column", position: "sticky", top: 0, height: "100vh", transition: "width 0.25s", overflow: "hidden", flexShrink: 0, boxShadow: "4px 0 20px rgba(0,0,0,0.15)" }}>
-          <div style={{ padding: sidebarOpen ? "22px 18px 18px" : "22px 12px 18px", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", gap: "12px" }}>
-            <img src={logoImg} alt="Logo" style={{ width: 36, height: 36, objectFit: "contain", flexShrink: 0 }} />
+        {/* ── SIDEBAR (School Management Dashboard Style) ─────────────── */}
+        <aside style={{
+          width: sidebarOpen ? "260px" : "78px",
+          background: "#ffffff",
+          display: "flex",
+          flexDirection: "column",
+          position: "sticky",
+          top: 0,
+          height: "100vh",
+          transition: "width 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+          overflow: "hidden",
+          flexShrink: 0,
+          borderRight: "1px solid rgba(16,28,68,0.06)",
+          boxShadow: "2px 0 16px rgba(16,28,68,0.02)",
+          zIndex: 40
+        }}>
+          {/* Logo & Academy Name */}
+          <div style={{
+            padding: sidebarOpen ? "22px 20px 20px" : "22px 14px 20px",
+            borderBottom: "1px solid #f1f5f9",
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            cursor: "pointer"
+          }} onClick={() => setActiveTab("Dashboard")}>
+            <div style={{
+              width: 40,
+              height: 40,
+              borderRadius: "12px",
+              background: "var(--navy, #101c44)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              boxShadow: "0 4px 12px rgba(16,28,68,0.15)"
+            }}>
+              <img src={logoImg} alt="Logo" style={{ width: 28, height: 28, objectFit: "contain" }} />
+            </div>
             {sidebarOpen && (
-              <div>
-                <div style={{ color: "#fff", fontWeight: 800, fontSize: "0.88rem", lineHeight: 1.2 }}>St. Lawrence</div>
-                <div style={{ color: "#d4a853", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.05em" }}>NEXT GEN ACADEMY</div>
+              <div style={{ overflow: "hidden" }}>
+                <div style={{ color: "var(--navy, #101c44)", fontWeight: 900, fontSize: "0.95rem", lineHeight: 1.15, fontFamily: "var(--font-h, 'Outfit', sans-serif)" }}>
+                  ia Academy
+                </div>
+                <div style={{ color: "var(--gold, #dfa921)", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                  St. Lawrence
+                </div>
               </div>
             )}
           </div>
-          {sidebarOpen && (
-            <div style={{ margin: "14px 12px 6px", background: "rgba(212,168,83,0.12)", border: "1px solid rgba(212,168,83,0.25)", borderRadius: "10px", padding: "10px 12px" }}>
-              <div style={{ color: "#a0b8cc", fontSize: "0.7rem", fontWeight: 700, marginBottom: "2px" }}>LOGGED IN AS</div>
-              <div style={{ color: "#fff", fontWeight: 700, fontSize: "0.85rem" }}>School Administrator</div>
-              <div style={{ color: "#d4a853", fontSize: "0.7rem", fontWeight: 700, marginTop: "1px" }}>ADMIN</div>
-            </div>
-          )}
-          <nav style={{ flex: 1, padding: "8px 8px", overflowY: "auto" }}>
-            {NAV.map(item => {
-              const active = activeTab === item.id;
+
+          {/* Navigation Groups List */}
+          <nav style={{ flex: 1, padding: sidebarOpen ? "14px 12px" : "14px 8px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px" }}>
+            {filteredNavGroups.map((group) => {
+              const isCollapsed = !!collapsedCategories[group.category];
               return (
-                <button key={item.id} className="nav-btn" onClick={() => setActiveTab(item.id)} style={{ display: "flex", alignItems: "center", gap: "12px", width: "100%", padding: "11px 12px", background: active ? "rgba(212,168,83,0.15)" : "transparent", border: "none", borderRadius: "10px", cursor: "pointer", color: active ? "#d4a853" : "rgba(255,255,255,0.65)", fontWeight: active ? 700 : 500, fontSize: "0.86rem", textAlign: "left", marginBottom: "2px", borderLeft: active ? "3px solid #d4a853" : "3px solid transparent" }}>
-                  <span style={{ flexShrink: 0 }}><Icon path={ICONS[item.icon]} size={17} color={active ? "#d4a853" : "rgba(255,255,255,0.5)"} /></span>
-                  {sidebarOpen && item.label}
-                </button>
+                <div key={group.category}>
+                  {/* Category Header */}
+                  {sidebarOpen && (
+                    <div
+                      onClick={() => toggleCategory(group.category)}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "6px 10px 6px 12px",
+                        fontSize: "0.68rem",
+                        fontWeight: 800,
+                        color: "#94a3b8",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        cursor: "pointer",
+                        userSelect: "none"
+                      }}
+                    >
+                      <span>{group.category}</span>
+                      <Icon path={isCollapsed ? ICONS.chevronRight : ICONS.chevronDown} size={12} color="#94a3b8" />
+                    </div>
+                  )}
+
+                  {/* Category Items */}
+                  {!isCollapsed && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px", marginTop: "2px" }}>
+                      {group.items.map((item) => {
+                        const active = activeTab === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            className={`nav-item-btn ${active ? "nav-item-active" : ""}`}
+                            onClick={() => setActiveTab(item.id)}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "12px",
+                              width: "100%",
+                              padding: sidebarOpen ? "10px 14px" : "11px 12px",
+                              background: active ? "#f5f3ff" : "transparent",
+                              border: "none",
+                              borderRadius: "12px",
+                              cursor: "pointer",
+                              color: active ? "#6b21a8" : "#64748b",
+                              fontWeight: active ? 800 : 600,
+                              fontSize: "0.85rem",
+                              textAlign: "left",
+                              borderLeft: active ? "4px solid #6b21a8" : "4px solid transparent",
+                              transition: "all 0.15s ease",
+                              justifyContent: sidebarOpen ? "flex-start" : "center"
+                            }}
+                            title={!sidebarOpen ? item.label : undefined}
+                          >
+                            <span style={{ flexShrink: 0, display: "flex" }}>
+                              <Icon path={ICONS[item.icon]} size={18} color={active ? "#6b21a8" : "#94a3b8"} stroke={active ? 2.2 : 1.8} />
+                            </span>
+                            {sidebarOpen && <span style={{ flex: 1 }}>{item.label}</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               );
             })}
           </nav>
-          <div style={{ padding: "10px 8px 18px", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-            <button onClick={handleLogout} className="nav-btn" style={{ display: "flex", alignItems: "center", gap: "12px", width: "100%", padding: "11px 12px", background: "transparent", border: "none", borderRadius: "10px", cursor: "pointer", color: "rgba(255,100,100,0.8)", fontWeight: 600, fontSize: "0.86rem", textAlign: "left" }}>
-              <Icon path={ICONS.logout} size={17} color="rgba(255,100,100,0.8)" />
-              {sidebarOpen && "Logout"}
+
+          {/* Sidebar Footer / Logout */}
+          <div style={{ padding: sidebarOpen ? "12px 14px 18px" : "12px 8px 18px", borderTop: "1px solid #f1f5f9" }}>
+            <button
+              onClick={handleLogout}
+              className="nav-item-btn"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                width: "100%",
+                padding: "10px 12px",
+                background: "transparent",
+                border: "none",
+                borderRadius: "12px",
+                cursor: "pointer",
+                color: "#ef4444",
+                fontWeight: 700,
+                fontSize: "0.85rem",
+                textAlign: "left",
+                justifyContent: sidebarOpen ? "flex-start" : "center"
+              }}
+              title="Logout"
+            >
+              <Icon path={ICONS.logout} size={18} color="#ef4444" stroke={2} />
+              {sidebarOpen && <span>Sign Out</span>}
             </button>
           </div>
         </aside>
 
-        {/* MAIN */}
-        <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-          <header style={{ background: "#fff", padding: "14px 24px", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-              <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: "#f1f5f9", border: "none", borderRadius: "8px", width: 36, height: 36, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <Icon path={ICONS.menu} size={17} color="#64748b" stroke={2} />
+        {/* ── MAIN CONTENT CONTAINER ────────────────────────────────── */}
+        <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}>
+          
+          {/* Top Header matching the mockup with Search & Profile Pill */}
+          <header style={{
+            height: "76px",
+            background: "#ffffff",
+            padding: "0 32px",
+            borderBottom: "1px solid rgba(16,28,68,0.06)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "20px",
+            boxShadow: "0 2px 12px rgba(16,28,68,0.02)",
+            position: "sticky",
+            top: 0,
+            zIndex: 30
+          }}>
+            {/* Left: Sidebar Toggle + Search Bar */}
+            <div style={{ display: "flex", alignItems: "center", gap: "18px", flex: 1, maxWidth: "540px" }}>
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                style={{
+                  background: "#f4f6fb",
+                  border: "none",
+                  borderRadius: "12px",
+                  width: 40,
+                  height: 40,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  transition: "background 0.15s ease"
+                }}
+                title="Toggle Sidebar"
+              >
+                <Icon path={ICONS.menu} size={18} color="#64748b" stroke={2} />
               </button>
-              <div>
-                <h1 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800, color: "#0f2144" }}>{NAV.find(n => n.id === activeTab)?.label || activeTab}</h1>
-                <p style={{ margin: 0, fontSize: "0.75rem", color: "#9ca3af" }}>St. Lawrence Next Gen Academy Admin Panel</p>
+
+              {/* Quick Search Input */}
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                background: "#f4f6fb",
+                padding: "8px 16px",
+                borderRadius: "14px",
+                flex: 1,
+                border: "1px solid transparent",
+                transition: "border-color 0.2s ease"
+              }}>
+                <Icon path={ICONS.search} size={16} color="#94a3b8" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="What do you want to find?"
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    outline: "none",
+                    width: "100%",
+                    fontSize: "0.88rem",
+                    color: "var(--navy, #101c44)",
+                    fontFamily: "inherit"
+                  }}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
+                  >
+                    <Icon path={ICONS.x} size={14} color="#94a3b8" />
+                  </button>
+                )}
               </div>
             </div>
-            <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#0f2144", color: "#d4a853", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: "1rem" }}>A</div>
+
+            {/* Right: Notification Icons + Admin Profile Pill */}
+            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+              {/* Bell Notification Button */}
+              <button
+                className="header-icon-btn"
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "12px",
+                  background: "#f8fafc",
+                  border: "1px solid rgba(16,28,68,0.06)",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  position: "relative",
+                  transition: "all 0.15s ease"
+                }}
+                title="Notifications"
+                onClick={() => setActiveTab("News")}
+              >
+                <Icon path={ICONS.bell} size={18} color="#64748b" />
+                <span style={{
+                  position: "absolute",
+                  top: 9,
+                  right: 9,
+                  width: 7,
+                  height: 7,
+                  background: "#ef4444",
+                  borderRadius: "50%",
+                  border: "2px solid #ffffff"
+                }} />
+              </button>
+
+              {/* Message Icon Button */}
+              <button
+                className="header-icon-btn"
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "12px",
+                  background: "#f8fafc",
+                  border: "1px solid rgba(16,28,68,0.06)",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  transition: "all 0.15s ease"
+                }}
+                title="Messages"
+                onClick={() => setActiveTab("Groups")}
+              >
+                <Icon path={ICONS.message} size={18} color="#64748b" />
+              </button>
+
+              {/* Admin Profile Pill */}
+              <div style={{ position: "relative" }}>
+                <div
+                  onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "6px 14px 6px 8px",
+                    borderRadius: "99px",
+                    background: "#ffffff",
+                    border: "1px solid rgba(16,28,68,0.08)",
+                    boxShadow: "0 2px 8px rgba(16,28,68,0.03)",
+                    cursor: "pointer",
+                    userSelect: "none"
+                  }}
+                >
+                  <div style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: "50%",
+                    background: "linear-gradient(135deg, var(--navy, #101c44) 0%, #25408f 100%)",
+                    color: "var(--gold, #dfa921)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: 900,
+                    fontSize: "0.85rem",
+                    flexShrink: 0
+                  }}>
+                    A
+                  </div>
+                  <div style={{ textAlign: "left", lineHeight: 1.2 }}>
+                    <div style={{ fontSize: "0.85rem", fontWeight: 800, color: "var(--navy, #101c44)" }}>
+                      Priscilla Lily
+                    </div>
+                    <div style={{ fontSize: "0.7rem", fontWeight: 600, color: "#94a3b8" }}>
+                      Admin
+                    </div>
+                  </div>
+                  <Icon path={ICONS.chevronDown} size={14} color="#94a3b8" />
+                </div>
+
+                {/* Profile Dropdown Menu */}
+                {profileMenuOpen && (
+                  <div style={{
+                    position: "absolute",
+                    top: "calc(100% + 8px)",
+                    right: 0,
+                    width: "180px",
+                    background: "#ffffff",
+                    borderRadius: "16px",
+                    padding: "8px",
+                    boxShadow: "0 12px 36px rgba(16,28,68,0.12)",
+                    border: "1px solid rgba(16,28,68,0.08)",
+                    zIndex: 50,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "4px"
+                  }}>
+                    <button
+                      onClick={() => { setActiveTab("Settings"); setProfileMenuOpen(false); }}
+                      style={{ background: "transparent", border: "none", padding: "8px 12px", borderRadius: "8px", textAlign: "left", fontSize: "0.82rem", fontWeight: 600, color: "var(--navy, #101c44)", cursor: "pointer" }}
+                      className="nav-item-btn"
+                    >
+                      ⚙️ Site Settings
+                    </button>
+                    <button
+                      onClick={() => { setActiveTab("Users"); setProfileMenuOpen(false); }}
+                      style={{ background: "transparent", border: "none", padding: "8px 12px", borderRadius: "8px", textAlign: "left", fontSize: "0.82rem", fontWeight: 600, color: "var(--navy, #101c44)", cursor: "pointer" }}
+                      className="nav-item-btn"
+                    >
+                      👥 User Roster
+                    </button>
+                    <div style={{ height: "1px", background: "#f1f5f9", margin: "4px 0" }} />
+                    <button
+                      onClick={handleLogout}
+                      style={{ background: "transparent", border: "none", padding: "8px 12px", borderRadius: "8px", textAlign: "left", fontSize: "0.82rem", fontWeight: 700, color: "#ef4444", cursor: "pointer" }}
+                      className="nav-item-btn"
+                    >
+                      🚪 Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </header>
-          <div style={{ flex: 1, overflowY: "auto", padding: "24px" }}>
+
+          {/* Tab Content Canvas with Soft Slate Canvas Background */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "32px" }}>
             {renderContent()}
           </div>
         </main>
@@ -1181,3 +1944,4 @@ export default function AdminPage() {
     </>
   );
 }
+

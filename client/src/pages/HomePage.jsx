@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import logoImg from "../assets/St. Lawrence Next Gen Academy logo.png";
 import TimeWeatherWidget from "../components/common/TimeWeatherWidget.jsx";
 import client from "../api/client";
+import { useAuth } from "../context/AuthContext";
 
 function NewsletterForm() {
   const [email, setEmail] = useState("");
@@ -42,7 +43,7 @@ function NewsletterForm() {
         {loading ? "Subscribing..." : "Subscribe →"}
       </button>
       {status === "success" && <p style={{ width: "100%", textAlign: "center", color: "#10b981", fontWeight: 700, fontSize: "0.9rem", margin: 0 }}>✅ You're subscribed! Welcome aboard.</p>}
-      {status === "error"   && <p style={{ width: "100%", textAlign: "center", color: "#ef4444", fontWeight: 700, fontSize: "0.9rem", margin: 0 }}>❌ Something went wrong. Please try again.</p>}
+      {status === "error" && <p style={{ width: "100%", textAlign: "center", color: "#ef4444", fontWeight: 700, fontSize: "0.9rem", margin: 0 }}>❌ Something went wrong. Please try again.</p>}
     </form>
   );
 }
@@ -341,6 +342,9 @@ const VALUE_POINTS = [
 ];
 
 export default function HomePage() {
+  const { user } = useAuth();
+  const isLoggedIn = !!user || !!localStorage.getItem("token");
+
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [announcements, setAnnouncements] = useState([]);
@@ -353,33 +357,33 @@ export default function HomePage() {
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 32);
     window.addEventListener("scroll", onScroll, { passive: true });
-    
+
     // Fetch live announcements
     client.get("/news")
       .then(({ data }) => {
         const filtered = (data.news || []).filter(n => n.tag !== "hall-of-fame");
         setAnnouncements(filtered.slice(0, 4));
       })
-      .catch(() => {});
-      
+      .catch(() => { });
+
     // Fetch dynamic site content
     client.get("/site-content/upcoming_exams").then(({ data }) => {
       if (data?.value?.length > 0) setUpcomingExams(data.value);
-    }).catch(() => {});
-    
+    }).catch(() => { });
+
     client.get("/site-content/trending_courses").then(({ data }) => {
       if (data?.value?.length > 0) setTrendingCourses(data.value);
-    }).catch(() => {});
+    }).catch(() => { });
 
     // Fetch Hall of Fame from DB
     client.get("/news/hall-of-fame/entries").then(({ data }) => {
       const entries = (data.entries || []).map(e => {
         let extra = {};
-        try { extra = JSON.parse(e.details || "{}"); } catch {}
+        try { extra = JSON.parse(e.details || "{}"); } catch { }
         return { ...e, ...extra };
       });
       if (entries.length > 0) setHallOfFame(entries);
-    }).catch(() => {});
+    }).catch(() => { });
 
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -401,16 +405,24 @@ export default function HomePage() {
         <div className="nav-links hide-on-mobile">
           <a href="#home">Home</a>
           <Link to="/classrooms">Classrooms</Link>
+          <Link to={isLoggedIn ? "/cbt" : "/login?redirect=/cbt"}>CBT Exams</Link>
+          <Link to="/tips">TIPS</Link>
+          <Link to="/resources">Resources</Link>
           <Link to="/groups">Communities</Link>
           <a href="#news">News</a>
           <a href="#hall-of-fame">Hall of Fame</a>
-          <a href="#pricing">Pricing</a>
         </div>
 
         <div className="nav-actions hide-on-mobile" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <Link to="/register" className="nav-cta">
-            Start Learning Free
-          </Link>
+          {isLoggedIn ? (
+            <Link to="/profile" className="nav-cta">
+              My Dashboard
+            </Link>
+          ) : (
+            <Link to="/register" className="nav-cta">
+              Start Learning Free
+            </Link>
+          )}
         </div>
 
         <button
@@ -441,31 +453,45 @@ export default function HomePage() {
         >
           <a href="#home" onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>Home</a>
           <Link to="/classrooms" onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>Classrooms</Link>
+          <Link to={isLoggedIn ? "/cbt" : "/login?redirect=/cbt"} onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>CBT Exam Practice</Link>
+          <Link to="/tips" onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>TIPS Learning</Link>
+          <Link to="/resources" onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>Resource Centre</Link>
           <Link to="/groups" onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>Communities</Link>
           <a href="#news" onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>News & Announcements</a>
           <a href="#hall-of-fame" onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>Hall of Fame</a>
           <a href="#pricing" onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>Pricing</a>
-          <Link
-            to="/register"
-            className="btn-primary"
-            onClick={() => setMenuOpen(false)}
-            style={{ justifyContent: "center" }}
-          >
-            Create Free Account
-          </Link>
+          {isLoggedIn ? (
+            <Link
+              to="/profile"
+              className="btn-primary"
+              onClick={() => setMenuOpen(false)}
+              style={{ justifyContent: "center" }}
+            >
+              My Dashboard
+            </Link>
+          ) : (
+            <Link
+              to="/register"
+              className="btn-primary"
+              onClick={() => setMenuOpen(false)}
+              style={{ justifyContent: "center" }}
+            >
+              Create Free Account
+            </Link>
+          )}
         </div>
       )}
 
-      <section id="home" className="portal-hero" style={{ 
-        backgroundColor: 'var(--navy)', 
+      <section id="home" className="portal-hero" style={{
+        backgroundColor: 'var(--navy)',
         color: 'var(--white)',
         backgroundImage: 'linear-gradient(rgba(10, 22, 40, 0.85), rgba(10, 22, 40, 0.95)), url("https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExc21sbXR6bm9sajJnNGlvdGF1dWhiZjkwOTI3MDY1emtkdDlpZzdjbiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/KVZWZQoS0yqfIiTAKq/giphy.gif")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        <div className="portal-grid-accent" style={{ 
-          backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)' 
+        <div className="portal-grid-accent" style={{
+          backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)'
         }} />
         <div className="wrap portal-hero-inner">
           <div className="portal-hero-copy reveal">
@@ -507,12 +533,12 @@ export default function HomePage() {
           </div>
 
           <div className="portal-hero-side reveal reveal-delay-1" style={{ display: 'flex', flexDirection: 'column', gap: '32px', alignItems: 'center', width: '100%' }}>
-            
-            <div className="portal-achievement-card" style={{ 
+
+            <div className="portal-achievement-card" style={{
               width: '100%',
               maxWidth: '440px',
-              background: 'rgba(255, 255, 255, 0.06)', 
-              border: '1px solid rgba(255, 255, 255, 0.12)', 
+              background: 'rgba(255, 255, 255, 0.06)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
               backdropFilter: 'blur(16px)',
               borderRadius: '24px',
               padding: '24px',
@@ -677,7 +703,7 @@ export default function HomePage() {
                   const rank = course.rank || (index + 1);
                   const title = course.title || course[0];
                   const aspirants = course.aspirants || course[1];
-                  
+
                   return (
                     <div key={title} className="subject-row">
                       <div className="subject-info">
@@ -807,9 +833,9 @@ export default function HomePage() {
                   <Link
                     to="/register"
                     className="btn"
-                    style={{ 
-                      display: 'flex', 
-                      justifyContent: 'center', 
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'center',
                       width: '100%',
                       background: plan.name === 'Free' ? 'transparent' : plan.accent,
                       color: plan.name === 'Free' ? 'var(--navy)' : '#fff',
@@ -887,7 +913,7 @@ export default function HomePage() {
       <section style={{ background: "var(--off-white)", padding: "72px 0", borderTop: "1px solid var(--border)" }}>
         <div className="wrap" style={{ maxWidth: 680, textAlign: "center" }}>
           <div className="hero-chip" style={{ marginBottom: 16, display: "inline-flex" }}>
-            <span className="chip-dot" /> Stay Informed
+            Stay Informed
           </div>
           <h2 style={{ fontFamily: "var(--font-h)", fontSize: "clamp(1.8rem, 4vw, 2.6rem)", fontWeight: 900, color: "var(--navy)", marginBottom: 12 }}>
             Get Academy Updates in Your Inbox

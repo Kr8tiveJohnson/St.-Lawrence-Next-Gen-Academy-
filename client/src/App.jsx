@@ -16,7 +16,10 @@ import NotFoundPage from "./pages/NotFoundPage.jsx";
 import TermsPage from "./pages/TermsPage.jsx";
 import PrivacyPage from "./pages/PrivacyPage.jsx";
 import PrivacyNotice from "./components/common/PrivacyNotice.jsx";
-import HolidayPopup from "./components/common/HolidayPopup.jsx";
+import CbtExamPage from "./pages/CbtExamPage.jsx";
+import TipsPage from "./pages/TipsPage.jsx";
+import ResourcesPage from "./pages/ResourcesPage.jsx";
+import TeacherPage from "./pages/TeacherPage.jsx";
 
 export default function App() {
   return (
@@ -32,16 +35,19 @@ export default function App() {
           <Route path="/news" element={<NewsPage />} />
           <Route path="/admin-login" element={<AdminLoginPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/teacher" element={<TeacherPage />} />
           <Route path="/hall-of-fame" element={<HallOfFamePage />} />
           <Route path="/classrooms" element={<ClassroomsPage />} />
           <Route path="/groups" element={<GroupsPage />} />
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/cbt" element={<CbtExamPage />} />
+          <Route path="/tips" element={<TipsPage />} />
+          <Route path="/resources" element={<ResourcesPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
         <PrivacyNotice />
-        <HolidayPopup />
       </BrowserRouter>
     </AuthProvider>
   );

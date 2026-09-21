@@ -20,14 +20,14 @@ enum Tier {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  role      Role     @default(STUDENT)
-  tier      Tier     @default(UNPAID)
-  cookieConsent Boolean @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String
+  role          Role     @default(STUDENT)
+  tier          Tier     @default(UNPAID)
+  cookieConsent Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   profile             Profile?
   permissionOverrides PermissionOverride[]
@@ -35,31 +35,38 @@ model User {
   bookmarks           Bookmark[]
   
   // Relations for messaging and friends
-  sentMessages     Message[] @relation("Sender")
-  receivedMessages Message[] @relation("Receiver")
-  sentFriendships   Friendship[] @relation("Requester")
-  receivedFriendships Friendship[] @relation("Receiver")
-  payments             Payment[]
+  sentMessages        Message[]            @relation("Sender")
+  receivedMessages    Message[]            @relation("Receiver")
+  sentFriendships     Friendship[]         @relation("Requester")
+  receivedFriendships Friendship[]         @relation("Receiver")
+  payments            Payment[]
+
+  // Learning Platform additions
+  cbtAttempts           CbtAttempt[]
+  assignmentSubmissions AssignmentSubmission[] @relation("StudentSubmissions")
+  lessonProgress        LessonProgress[]
 }
 
 model Profile {
-  id          String   @id @default(uuid())
-  fullName    String?
-  phone       String?
-  dateOfBirth DateTime?
-  avatarUrl   String?
+  id               String    @id @default(uuid())
+  fullName         String?
+  phone            String?
+  dateOfBirth      DateTime?
+  avatarUrl        String?
+  targetClass      String?   // e.g. "SSS 3", "JAMB UTME Candidate", "WAEC Candidate", "JSS 3"
+  selectedSubjects Json?     // e.g. ["Mathematics", "English", "Physics", "Chemistry", "Biology"]
   
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model PermissionOverride {
-  id     String @id @default(uuid())
+  id     String  @id @default(uuid())
   key    String
   value  Boolean @default(true)
   
   userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, key])
 }
@@ -95,23 +102,40 @@ model Course {
 }
 
 model Lesson {
-  id         String @id @default(uuid())
-  title      String
-  playbackId String?
-  courseId   String
-  course     Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id              String           @id @default(uuid())
+  title           String
+  playbackId      String?
+  content         String?          // Lesson notes & text
+  durationMinutes Int?
+  order           Int              @default(1)
+  courseId        String
+  course          Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress        LessonProgress[]
+}
+
+model LessonProgress {
+  id          String   @id @default(uuid())
+  userId      String
+  lessonId    String
+  completed   Boolean  @default(true)
+  completedAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
 }
 
 model PastQuestion {
-  id           String     @id @default(uuid())
-  examType     String
-  subject      String
-  year         Int
-  questionText String
-  options      Json
+  id            String     @id @default(uuid())
+  examType      String
+  subject       String
+  year          Int
+  questionText  String
+  options       Json
   correctOption String
-  isPaid       Boolean    @default(true)
-  bookmarks    Bookmark[]
+  isPaid        Boolean    @default(true)
+  bookmarks     Bookmark[]
 }
 
 model Bookmark {
@@ -125,6 +149,105 @@ model Bookmark {
   @@unique([userId, pastQuestionId])
 }
 
+// ── CBT & QUESTION BANK ───────────────────────────────────────
+model CbtQuestion {
+  id            String   @id @default(uuid())
+  examType      String   // "JAMB", "WAEC", "NECO", "INTERNAL"
+  subject       String   // "Mathematics", "English", "Physics", "Chemistry", "Biology", "Economics", etc.
+  targetClass   String?  // "SSS 3", "JAMB", "GENERAL"
+  topic         String
+  year          Int?
+  difficulty    String   @default("MEDIUM") // "EASY", "MEDIUM", "HARD"
+  questionText  String
+  options       Json     // Array of { id: "A", text: "..." }
+  correctOption String   // "A", "B", "C", "D"
+  explanation   String?  // Detailed worked solution & explanation
+  authorId      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model CbtAttempt {
+  id               String   @id @default(uuid())
+  userId           String
+  examType         String
+  subject          String
+  totalQuestions   Int
+  score            Int
+  percentage       Float
+  timeSpentSeconds Int
+  answers          Json     // { [questionId]: { chosen: "B", correct: "A", isCorrect: false } }
+  createdAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ── TIPS LEARNING SYSTEM ──────────────────────────────────────
+model Tip {
+  id            String   @id @default(uuid())
+  title         String
+  subject       String
+  category      String   // e.g. "Algebra", "Grammar", "Mechanics", "Stoichiometry"
+  keyIdea       String
+  explanation   String
+  example       String?
+  memoryTrick   String?  // Mnemonic or mental trigger
+  formulaOrRule String?  // Essential rule or mathematical formula
+  commonMistake String?  // Common pitfall and how to avoid it
+  quickRecall   Json?    // { question: "...", options: ["..."], answer: "..." }
+  authorId      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ── EDUCATIONAL RESOURCE LIBRARY ─────────────────────────────
+model Resource {
+  id             String   @id @default(uuid())
+  title          String
+  subject        String
+  targetClass    String?  // e.g. "JSS 1-3", "SSS 1-3", "JAMB/WAEC"
+  resourceType   String   // "NOTE", "PDF", "WORKSHEET", "REVISION", "TIPS", "GUIDE"
+  description    String?
+  fileUrl        String
+  authorId       String?
+  downloadsCount Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ── DIGITAL ASSIGNMENT SYSTEM ────────────────────────────────
+model Assignment {
+  id          String   @id @default(uuid())
+  title       String
+  subject     String
+  targetClass String   // e.g. "SSS 3", "JSS 2"
+  description String
+  fileUrl     String?
+  dueDate     DateTime?
+  teacherId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  submissions AssignmentSubmission[]
+}
+
+model AssignmentSubmission {
+  id             String   @id @default(uuid())
+  assignmentId   String
+  studentId      String
+  submissionText String?
+  fileUrl        String?
+  score          Float?
+  feedback       String?
+  status         String   @default("SUBMITTED") // "SUBMITTED", "GRADED"
+  submittedAt    DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    User       @relation("StudentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+// ── COMMUNITY & NEWS ─────────────────────────────────────────
 model News {
   id        String   @id @default(uuid())
   title     String
@@ -143,8 +266,8 @@ model Message {
 
   senderId   String
   receiverId String
-  sender     User @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver   User @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     User     @relation("Sender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
 }
 
 model Friendship {
@@ -154,8 +277,8 @@ model Friendship {
 
   requesterId String
   receiverId  String
-  requester   User @relation("Requester", fields: [requesterId], references: [id], onDelete: Cascade)
-  receiver    User @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  requester   User     @relation("Requester", fields: [requesterId], references: [id], onDelete: Cascade)
+  receiver    User     @relation("Receiver", fields: [receiverId], references: [id], onDelete: Cascade)
 
   @@unique([requesterId, receiverId])
 }
@@ -178,7 +301,6 @@ model Payment {
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-
 
 model SiteContent {
   id        String   @id @default(uuid())
