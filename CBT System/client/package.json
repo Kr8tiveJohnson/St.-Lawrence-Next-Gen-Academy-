@@ -1,0 +1,21 @@
+{
+  "name": "st-lawrence-cbt-client",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Dedicated Computer-Based Testing (CBT) Frontend Application",
+  "scripts": {
+    "dev": "node --max-http-header-size=65536 ./node_modules/vite/bin/vite.js --port 5174",
+    "build": "vite build",
+    "preview": "vite preview --port 5174"
+  },
+  "dependencies": {
+    "axios": "^1.18.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.0.3",
+    "vite": "^8.1.3"
+  }
+}

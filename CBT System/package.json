@@ -1,0 +1,16 @@
+{
+  "name": "st-lawrence-cbt-system",
+  "version": "1.0.0",
+  "description": "St. Lawrence Next Gen Academy - Dedicated Computer Based Testing (CBT) System",
+  "scripts": {
+    "start": "npm --prefix client run dev",
+    "dev": "npm --prefix client run dev",
+    "dev:client": "npm --prefix client run dev",
+    "dev:server": "npm --prefix server run dev",
+    "build:client": "npm --prefix client run build",
+    "seed:server": "npm --prefix server run seed"
+  },
+  "keywords": ["cbt", "jamb", "waec", "neco", "examination", "st-lawrence"],
+  "author": "St. Lawrence Next Gen Academy",
+  "license": "ISC"
+}

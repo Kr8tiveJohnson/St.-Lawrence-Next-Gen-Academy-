@@ -49,6 +49,8 @@ model User {
 
 model Profile {
   id               String    @id @default(uuid())
+  surname          String?
+  firstName        String?
   fullName         String?
   phone            String?
   dateOfBirth      DateTime?
@@ -151,20 +153,87 @@ model Bookmark {
 
 // ── CBT & QUESTION BANK ───────────────────────────────────────
 model CbtQuestion {
-  id            String   @id @default(uuid())
-  examType      String   // "JAMB", "WAEC", "NECO", "INTERNAL"
-  subject       String   // "Mathematics", "English", "Physics", "Chemistry", "Biology", "Economics", etc.
-  targetClass   String?  // "SSS 3", "JAMB", "GENERAL"
-  topic         String
-  year          Int?
-  difficulty    String   @default("MEDIUM") // "EASY", "MEDIUM", "HARD"
-  questionText  String
-  options       Json     // Array of { id: "A", text: "..." }
-  correctOption String   // "A", "B", "C", "D"
-  explanation   String?  // Detailed worked solution & explanation
-  authorId      String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id               String    @id @default(uuid())
+  examType         String    // "JAMB", "WAEC", "NECO", "INTERNAL"
+  subject          String    // "Mathematics", "English", "Physics", "Chemistry", "Biology", "Economics", etc.
+  targetClass      String?   // "SSS 3", "JAMB UTME", "GENERAL"
+  topic            String
+  subTopic         String?
+  syllabusVersion  String?   // e.g. "2024-2027", "Current WAEC SSCE"
+  year             Int?      // Verified examination year for official past questions
+  difficulty       String    @default("MEDIUM") // "EASY", "MEDIUM", "HARD"
+  questionType     String    @default("MULTIPLE_CHOICE") // "MULTIPLE_CHOICE", "THEORY", "FILL_IN_BLANK"
+  questionText     String
+  options          Json      // Array of { id: "A", text: "..." }
+  correctOption    String?   // "A", "B", "C", "D", "E"
+  explanation      String?   // Detailed worked solution & explanation
+  passageText      String?   // Shared reading comprehension or case study passage
+  imageUrl         String?   // Diagrams, charts, tables
+  markingGuide     String?   // For theory/essay marking guides
+
+  // Origin & Source Integrity
+  origin           String    @default("PRACTICE_QUESTION") // "PAST_QUESTION", "ORIGINAL_PRACTICE", "AI_GENERATED"
+  sourceName       String?   // e.g. "Official WAEC SSCE June 2022 Paper 2"
+  sourceUrl        String?
+  permissionStatus String?   @default("VERIFIED") // "VERIFIED", "ACADEMIC_FAIR_USE", "ORIGINAL", "PENDING_VERIFICATION"
+
+  // Review & Publication Workflow
+  status           String    @default("APPROVED") // "DRAFT", "PENDING_REVIEW", "APPROVED", "REJECTED", "ARCHIVED"
+  isPublished      Boolean   @default(true)
+  reviewNotes      String?
+  reviewedBy       String?
+  reviewedAt       DateTime?
+
+  // Normalized question text for duplicate detection
+  normalizedText   String?
+
+  authorId         String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([examType, subject])
+  @@index([status, isPublished])
+}
+
+model CbtSubject {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  code        String?    @unique
+  examTypes   Json       // e.g. ["JAMB", "WAEC", "NECO", "INTERNAL"]
+  description String?
+  icon        String?
+  isActive    Boolean    @default(true)
+  topics      CbtTopic[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model CbtTopic {
+  id              String     @id @default(uuid())
+  subjectId       String
+  name            String
+  syllabusVersion String?
+  order           Int        @default(1)
+  subject         CbtSubject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@unique([subjectId, name])
+}
+
+model CbtImportLog {
+  id             String    @id @default(uuid())
+  fileName       String
+  fileType       String    // "CSV", "JSON", "EXCEL"
+  totalRows      Int       @default(0)
+  acceptedCount  Int       @default(0)
+  skippedCount   Int       @default(0)
+  duplicateCount Int       @default(0)
+  failedCount    Int       @default(0)
+  errors         Json?     // [{ row: 2, error: "Missing option A", raw: "..." }]
+  importedBy     String?
+  status         String    @default("COMPLETED") // "PENDING", "PROCESSING", "COMPLETED", "FAILED"
+  createdAt      DateTime  @default(now())
 }
 
 model CbtAttempt {

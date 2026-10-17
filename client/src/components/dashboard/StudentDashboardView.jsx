@@ -3,6 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import client from "../../api/client";
 import logoImg from "../../assets/St. Lawrence Next Gen Academy logo.png";
 
+function getCbtPortalUrl() {
+  const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
+  return `http://localhost:5174${token ? `#token=${encodeURIComponent(token)}` : ''}`;
+}
+
 // ─── Crisp, Professional SVG Vector Line Icons (Feather / Lucide Style) ───────
 export function SvgIcon({ name, size = 18, color = "currentColor", stroke = 1.8, style = {} }) {
   const icons = {
@@ -293,6 +298,7 @@ export default function StudentDashboardView({
     { id: "Overview", label: "Overview", icon: "overview" },
     { id: "Learning Progress", label: "Learning Progress", icon: "progress" },
     { id: "CBT History", label: "CBT History", icon: "clock" },
+    { id: "CBT Portal", label: "CBT Exam Hall ↗", icon: "clock" },
     { id: "Assignments", label: "Assignments", icon: "assignment", badge: assignments.filter(a => !a.submissions?.[0]).length || null },
     { id: "My Courses", label: "My Courses", icon: "courses" },
     { id: "Friends", label: "Friends", icon: "friends", badge: pendingCount > 0 ? pendingCount : null },
@@ -349,6 +355,10 @@ export default function StudentDashboardView({
 
   // Tab switcher
   const handleSelectTab = (tabId) => {
+    if (tabId === "CBT Portal") {
+      window.location.href = getCbtPortalUrl();
+      return;
+    }
     if (setActiveTab) setActiveTab(tabId);
     setMobileMenuOpen(false);
   };
@@ -1346,7 +1356,7 @@ export default function StudentDashboardView({
                   </p>
                 </div>
                 <button
-                  onClick={() => navigate("/cbt")}
+                  onClick={() => window.location.href = getCbtPortalUrl()}
                   style={{
                     padding: "9px 16px",
                     background: "#101c44",
@@ -1362,7 +1372,7 @@ export default function StudentDashboardView({
                   }}
                 >
                   <SvgIcon name="plus" size={14} color="#fef08a" stroke={2.5} />
-                  <span>Take Drill</span>
+                  <span>Take Drill ↗</span>
                 </button>
               </div>
 
@@ -1463,6 +1473,7 @@ export default function StudentDashboardView({
           {/* ════════════ TAB 3: CBT HISTORY ════════════ */}
           {currentTab === "CBT History" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
                 <div>
                   <h2 style={{ fontSize: "1.25rem", fontWeight: 900, color: "#101c44", margin: "0 0 4px" }}>
@@ -1472,8 +1483,8 @@ export default function StudentDashboardView({
                     Review past examination attempts, time used, and accuracy metrics.
                   </p>
                 </div>
-                <Link
-                  to="/cbt"
+                <a
+                  href={getCbtPortalUrl()}
                   style={{
                     padding: "9px 18px",
                     background: "#101c44",
@@ -1488,8 +1499,8 @@ export default function StudentDashboardView({
                   }}
                 >
                   <SvgIcon name="plus" size={14} color="#fef08a" stroke={2.5} />
-                  <span>Take New CBT Test</span>
-                </Link>
+                  <span>Take New CBT Test ↗</span>
+                </a>
               </div>
 
               {loadingCbt ? (
@@ -1507,8 +1518,8 @@ export default function StudentDashboardView({
                   <p style={{ fontSize: "0.88rem", color: "#64748b", margin: "0 0 20px" }}>
                     Test your knowledge with our timed JAMB and WAEC exam practice engine.
                   </p>
-                  <Link
-                    to="/cbt"
+                  <a
+                    href={getCbtPortalUrl()}
                     style={{
                       padding: "10px 22px",
                       background: "#101c44",
@@ -1519,8 +1530,8 @@ export default function StudentDashboardView({
                       fontSize: "0.85rem"
                     }}
                   >
-                    Start First CBT Drill →
-                  </Link>
+                    Start First CBT Drill ↗
+                  </a>
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>

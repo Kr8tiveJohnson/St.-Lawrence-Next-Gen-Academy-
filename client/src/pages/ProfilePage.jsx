@@ -6,7 +6,11 @@ import logoImg from "../assets/St. Lawrence Next Gen Academy logo.png";
 import SchoolDashboardView from "../components/dashboard/SchoolDashboardView";
 import StudentDashboardView from "../components/dashboard/StudentDashboardView";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+function getCbtPortalUrl() {
+  const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
+  return `http://localhost:5174${token ? `#token=${encodeURIComponent(token)}` : ''}`;
+}
+
 function getInitials(name = "") {
   const parts = name.trim().split(" ");
   return parts.length >= 2
@@ -105,7 +109,7 @@ function ProgressTab() {
 
         {(!data.subjectProgress || data.subjectProgress.length === 0) ? (
           <div style={{ textAlign: "center", padding: "24px", color: "var(--text-3)" }}>
-            No subject activity recorded yet. Take your first <Link to="/cbt" style={{ color: "var(--navy)", fontWeight: 700 }}>CBT Exam</Link> to start tracking!
+            No subject activity recorded yet. Take your first <a href={getCbtPortalUrl()} style={{ color: "var(--navy)", fontWeight: 700 }}>CBT Exam</a> to start tracking!
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
@@ -232,9 +236,9 @@ function CbtHistoryTab() {
             Review past scores, time used, and performance metrics across examinations.
           </p>
         </div>
-        <Link to="/cbt" style={{ padding: "10px 18px", background: "var(--navy)", color: "#ffffff", borderRadius: 10, textDecoration: "none", fontWeight: 800, fontSize: "0.85rem" }}>
-          + Take New CBT Test
-        </Link>
+        <a href={getCbtPortalUrl()} style={{ padding: "10px 18px", background: "var(--navy)", color: "#ffffff", borderRadius: 10, textDecoration: "none", fontWeight: 800, fontSize: "0.85rem" }}>
+          + Take New CBT Test ↗
+        </a>
       </div>
 
       {loading ? (
@@ -246,9 +250,9 @@ function CbtHistoryTab() {
           <p style={{ fontSize: "0.9rem", color: "var(--text-2)", margin: "0 0 20px" }}>
             Put your knowledge to the test with our timed JAMB and WAEC exam practice engine.
           </p>
-          <Link to="/cbt" style={{ display: "inline-block", padding: "10px 22px", background: "var(--navy)", color: "#ffffff", borderRadius: 10, textDecoration: "none", fontWeight: 800, fontSize: "0.88rem" }}>
-            Start First CBT Drill →
-          </Link>
+          <a href={getCbtPortalUrl()} style={{ display: "inline-block", padding: "10px 22px", background: "var(--navy)", color: "#ffffff", borderRadius: 10, textDecoration: "none", fontWeight: 800, fontSize: "0.88rem" }}>
+            Start First CBT Drill ↗
+          </a>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1628,9 +1632,9 @@ export default function ProfilePage() {
               ← Overview
             </button>
           )}
-          <Link to="/cbt" style={{ color: "var(--navy)", fontWeight: 700, fontSize: "0.85rem", textDecoration: "none" }}>
-            CBT Exams
-          </Link>
+          <a href={getCbtPortalUrl()} style={{ color: "var(--navy)", fontWeight: 700, fontSize: "0.85rem", textDecoration: "none" }}>
+            CBT Exams ↗
+          </a>
           <Link to="/tips" style={{ color: "var(--navy)", fontWeight: 700, fontSize: "0.85rem", textDecoration: "none" }}>
             TIPS Recall
           </Link>
@@ -1698,9 +1702,9 @@ export default function ProfilePage() {
           </div>
 
           <div style={{ display: "flex", gap: 10 }}>
-            <Link to="/cbt" style={{ padding: "10px 18px", background: "var(--navy)", color: "#ffffff", borderRadius: 10, textDecoration: "none", fontWeight: 800, fontSize: "0.85rem" }}>
-              Open CBT Platform →
-            </Link>
+            <a href={getCbtPortalUrl()} style={{ padding: "10px 18px", background: "var(--navy)", color: "#ffffff", borderRadius: 10, textDecoration: "none", fontWeight: 800, fontSize: "0.85rem" }}>
+              Open CBT Platform ↗
+            </a>
           </div>
         </div>
 
@@ -1834,13 +1838,13 @@ export default function ProfilePage() {
                       🚀 Quick Learning Portals
                     </h3>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 12 }}>
-                      <Link to="/cbt" style={{ textDecoration: "none" }}>
+                      <a href={getCbtPortalUrl()} style={{ textDecoration: "none" }}>
                         <div style={{ background: "rgba(16,28,68,0.03)", borderRadius: 14, padding: "18px 14px", textAlign: "center", border: "1px solid var(--border)" }}>
                           <div style={{ fontSize: "1.8rem", marginBottom: 6 }}>⏱️</div>
-                          <div style={{ fontWeight: 800, color: "var(--navy)", fontSize: "0.88rem" }}>CBT Exam Practice</div>
+                          <div style={{ fontWeight: 800, color: "var(--navy)", fontSize: "0.88rem" }}>CBT Exam Practice ↗</div>
                           <div style={{ fontSize: "0.72rem", color: "var(--text-3)", marginTop: 2 }}>Timed tests & auto-grading</div>
                         </div>
-                      </Link>
+                      </a>
 
                       <Link to="/tips" style={{ textDecoration: "none" }}>
                         <div style={{ background: "rgba(16,28,68,0.03)", borderRadius: 14, padding: "18px 14px", textAlign: "center", border: "1px solid var(--border)" }}>

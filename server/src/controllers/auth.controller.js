@@ -5,7 +5,7 @@ const sanitizeUser = require('../utils/sanitizeUser');
 
 async function register(req, res) {
   try {
-    const { email, password, fullName, phone, dateOfBirth, role, avatarUrl, targetClass, selectedSubjects } = req.body;
+    const { email, password, fullName, surname, firstName, phone, dateOfBirth, role, avatarUrl, targetClass, selectedSubjects } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
@@ -20,6 +20,11 @@ async function register(req, res) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Compute names
+    const resolvedSurname = (surname || '').trim() || (fullName ? fullName.split(' ').slice(1).join(' ') : null);
+    const resolvedFirstName = (firstName || '').trim() || (fullName ? fullName.split(' ')[0] : null);
+    const resolvedFullName = (fullName || `${resolvedFirstName || ''} ${resolvedSurname || ''}`).trim();
+
     // Create user and profile
     const user = await prisma.user.create({
       data: {
@@ -28,7 +33,9 @@ async function register(req, res) {
         role: role === 'Teacher' ? 'TEACHER' : 'STUDENT',
         profile: {
           create: {
-            fullName,
+            surname: resolvedSurname,
+            firstName: resolvedFirstName,
+            fullName: resolvedFullName,
             phone,
             dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
             avatarUrl: avatarUrl || null,

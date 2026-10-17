@@ -19,18 +19,27 @@ async function getMe(req, res) {
  */
 async function updateProfile(req, res) {
   try {
-    const { fullName, phone, dateOfBirth, targetClass, selectedSubjects } = req.body;
+    const { fullName, surname, firstName, phone, dateOfBirth, targetClass, selectedSubjects } = req.body;
     const userId = req.user.id;
+
+    const dataToUpdate = {
+      phone: phone !== undefined ? phone : undefined,
+      dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
+      targetClass: targetClass !== undefined ? targetClass : undefined,
+      selectedSubjects: selectedSubjects !== undefined ? selectedSubjects : undefined
+    };
+
+    if (surname !== undefined) dataToUpdate.surname = surname ? surname.trim() : null;
+    if (firstName !== undefined) dataToUpdate.firstName = firstName ? firstName.trim() : null;
+    if (fullName !== undefined) {
+      dataToUpdate.fullName = fullName ? fullName.trim() : null;
+    } else if (surname !== undefined || firstName !== undefined) {
+      dataToUpdate.fullName = `${firstName || ''} ${surname || ''}`.trim() || undefined;
+    }
 
     const updatedProfile = await prisma.profile.update({
       where: { userId },
-      data: {
-        fullName: fullName !== undefined ? fullName : undefined,
-        phone: phone !== undefined ? phone : undefined,
-        dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : undefined,
-        targetClass: targetClass !== undefined ? targetClass : undefined,
-        selectedSubjects: selectedSubjects !== undefined ? selectedSubjects : undefined
-      }
+      data: dataToUpdate
     });
 
     const user = await prisma.user.findUnique({

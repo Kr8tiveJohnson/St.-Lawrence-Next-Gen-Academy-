@@ -3,19 +3,153 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import logoImg from "../assets/St. Lawrence Next Gen Academy logo.png";
 
-const NIGERIAN_STATES = [
-  "Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno",
-  "Cross River","Delta","Ebonyi","Edo","Ekiti","Enugu","FCT - Abuja","Gombe",
-  "Imo","Jigawa","Kaduna","Kano","Katsina","Kebbi","Kogi","Kwara","Lagos",
-  "Nasarawa","Niger","Ogun","Ondo","Osun","Oyo","Plateau","Rivers","Sokoto",
-  "Taraba","Yobe","Zamfara",
-];
+const COUNTRY_DATA = {
+  Nigeria: {
+    name: "Nigeria",
+    flag: "🇳🇬",
+    dialCode: "+234",
+    placeholder: "+234 801 234 5678",
+    stateLabel: "State / FCT",
+    states: [
+      "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno",
+      "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu", "FCT - Abuja", "Gombe",
+      "Imo", "Jigawa", "Kaduna", "Kano", "Katsina", "Kebbi", "Kogi", "Kwara", "Lagos",
+      "Nasarawa", "Niger", "Ogun", "Ondo", "Osun", "Oyo", "Plateau", "Rivers", "Sokoto",
+      "Taraba", "Yobe", "Zamfara"
+    ]
+  },
+  Ghana: {
+    name: "Ghana",
+    flag: "🇬🇭",
+    dialCode: "+233",
+    placeholder: "+233 24 123 4567",
+    stateLabel: "Region / Community",
+    states: [
+      "Greater Accra", "Ashanti", "Central", "Eastern", "Western", "Western North",
+      "Volta", "Oti", "Northern", "Savannah", "North East", "Upper East", "Upper West",
+      "Bono", "Bono East", "Ahafo"
+    ]
+  },
+  Kenya: {
+    name: "Kenya",
+    flag: "🇰🇪",
+    dialCode: "+254",
+    placeholder: "+254 712 345678",
+    stateLabel: "County / Community",
+    states: [
+      "Nairobi", "Mombasa", "Kisumu", "Nakuru", "Kiambu", "Uasin Gishu", "Machakos",
+      "Kilifi", "Nyeri", "Garissa", "Kakamega", "Meru", "Kajiado", "Kericho"
+    ]
+  },
+  "South Africa": {
+    name: "South Africa",
+    flag: "🇿🇦",
+    dialCode: "+27",
+    placeholder: "+27 82 123 4567",
+    stateLabel: "Province / Municipality",
+    states: [
+      "Gauteng", "Western Cape", "KwaZulu-Natal", "Eastern Cape", "Free State",
+      "Limpopo", "Mpumalanga", "North West", "Northern Cape"
+    ]
+  },
+  "United Kingdom": {
+    name: "United Kingdom",
+    flag: "🇬🇧",
+    dialCode: "+44",
+    placeholder: "+44 7911 123456",
+    stateLabel: "Country / County / Region",
+    states: [
+      "England - Greater London", "England - South East", "England - West Midlands",
+      "England - North West", "England - Yorkshire", "Scotland", "Wales",
+      "Northern Ireland", "Other UK County / Community"
+    ]
+  },
+  "United States": {
+    name: "United States",
+    flag: "🇺🇸",
+    dialCode: "+1",
+    placeholder: "+1 555 123 4567",
+    stateLabel: "State / Territory",
+    states: [
+      "California", "Texas", "Florida", "New York", "Illinois", "Pennsylvania",
+      "Ohio", "Georgia", "North Carolina", "Michigan", "New Jersey", "Virginia",
+      "Washington", "Massachusetts", "Maryland", "Arizona", "Other US State / Community"
+    ]
+  },
+  Canada: {
+    name: "Canada",
+    flag: "🇨🇦",
+    dialCode: "+1",
+    placeholder: "+1 416 123 4567",
+    stateLabel: "Province / Territory",
+    states: [
+      "Ontario", "Quebec", "British Columbia", "Alberta", "Manitoba", "Saskatchewan",
+      "Nova Scotia", "New Brunswick", "Newfoundland and Labrador", "Prince Edward Island",
+      "Northwest Territories", "Yukon", "Nunavut"
+    ]
+  },
+  Cameroon: {
+    name: "Cameroon",
+    flag: "🇨🇲",
+    dialCode: "+237",
+    placeholder: "+237 6 71 23 45 67",
+    stateLabel: "Region / Community",
+    states: [
+      "Centre (Yaoundé)", "Littoral (Douala)", "Far North", "North", "Adamawa",
+      "East", "South", "West", "North-West", "South-West"
+    ]
+  },
+  Uganda: {
+    name: "Uganda",
+    flag: "🇺🇬",
+    dialCode: "+256",
+    placeholder: "+256 700 123456",
+    stateLabel: "Region / District",
+    states: [
+      "Central (Kampala)", "Eastern", "Northern", "Western"
+    ]
+  },
+  Rwanda: {
+    name: "Rwanda",
+    flag: "🇷🇼",
+    dialCode: "+250",
+    placeholder: "+250 788 123456",
+    stateLabel: "Province / District",
+    states: [
+      "Kigali City", "Northern Province", "Southern Province", "Eastern Province", "Western Province"
+    ]
+  },
+  India: {
+    name: "India",
+    flag: "🇮🇳",
+    dialCode: "+91",
+    placeholder: "+91 98765 43210",
+    stateLabel: "State / Union Territory",
+    states: [
+      "Maharashtra", "Delhi (NCR)", "Karnataka", "Tamil Nadu", "Uttar Pradesh",
+      "Gujarat", "West Bengal", "Telangana", "Kerala", "Rajasthan", "Other State / Community"
+    ]
+  },
+  Other: {
+    name: "Other Country",
+    flag: "🌐",
+    dialCode: "+",
+    placeholder: "+123 456 7890",
+    stateLabel: "State / Province / Community",
+    states: [
+      "Capital / Central Region", "Northern Region / Community", "Southern Region / Community",
+      "Eastern Region / Community", "Western Region / Community", "Metropolitan Area",
+      "Local District / Community"
+    ]
+  }
+};
 
 export default function RegisterPage() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     role: "Student",
     firstName: "",
+    surname: "",
     lastName: "",
     email: "",
     password: "",
@@ -23,7 +157,7 @@ export default function RegisterPage() {
     gender: "",
     country: "Nigeria",
     state: "",
-    phone: "",
+    phone: "+234",
     examBody: "JAMB",
     avatarUrl: "",
   });
@@ -34,9 +168,22 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [phoneError, setPhoneError] = useState("");
+  const [dobError, setDobError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [emailSuggestions, setEmailSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [loadingStates, setLoadingStates] = useState(false);
+  const [stateLoadingText, setStateLoadingText] = useState("");
+
+  // Helper to automatically capitalize the first alphabetical letter only
+  const capitalizeFirstLetter = (val) => {
+    if (!val) return "";
+    return val.replace(/^([^a-zA-Z]*)([a-zA-Z])/, (match, prefix, char) => prefix + char.toUpperCase());
+  };
+
+  // Maximum allowed date of birth is current date (Year 2026 downward, no future dates)
+  const maxDate = new Date().toISOString().split("T")[0];
+  const currentCountryData = COUNTRY_DATA[formData.country] || COUNTRY_DATA.Nigeria;
 
   // ── Password rules ────────────────────────────────────────────────
   const p = formData.password || "";
@@ -87,42 +234,61 @@ export default function RegisterPage() {
     setEmailError("");
   };
 
-  // ── Phone change handler ──────────────────────────────────────────
+  // ── Phone change handler (Supports all international numbers) ──────
   const handlePhoneChange = (raw) => {
-    // Strip everything except digits and leading +
-    let digits = raw.replace(/[^\d]/g, "");
+    // Preserve leading + and all numbers, spaces or dashes
+    const cleaned = raw.replace(/[^\d+]/g, "");
+    setFormData(prev => ({ ...prev, phone: cleaned }));
 
-    // Remove leading 0 if present after country code stripping
-    if (digits.startsWith("234")) {
-      // already has 234
-    } else if (digits.startsWith("0")) {
-      // replace leading 0 with 234
-      digits = "234" + digits.slice(1);
-    } else {
-      digits = "234" + digits.replace(/^234/, "");
-    }
-
-    const formatted = "+" + digits;
-    setFormData({ ...formData, phone: formatted });
-
-    if (digits.length < 13) {
-      setPhoneError("Phone number is incomplete. Format: +234 followed by 10 digits.");
-    } else if (digits.length > 13) {
-      setPhoneError("Phone number is too long. Please enter exactly 10 digits after +234.");
+    const digitsOnly = cleaned.replace(/[^\d]/g, "");
+    if (!cleaned || digitsOnly.length === 0) {
+      setPhoneError("Phone number is required.");
+    } else if (digitsOnly.length < 7) {
+      setPhoneError("Phone number is too short. Please include your country code (e.g. +234...)");
+    } else if (digitsOnly.length > 15) {
+      setPhoneError("Phone number is too long (maximum 15 digits according to international standards).");
     } else {
       setPhoneError("");
     }
   };
 
+  // ── Country change handler (Tally correct states with 3-sec loading) ─
+  const handleCountryChange = (newCountry) => {
+    const countryInfo = COUNTRY_DATA[newCountry] || COUNTRY_DATA.Other;
+    const prevDial = COUNTRY_DATA[formData.country]?.dialCode;
+    const shouldUpdatePhone = !formData.phone || formData.phone === prevDial || formData.phone === "+234";
+
+    setFormData(prev => ({
+      ...prev,
+      country: newCountry,
+      state: "",
+      phone: shouldUpdatePhone ? countryInfo.dialCode : prev.phone
+    }));
+
+    // User requirement: takes ~3 seconds to tally/load the correct state for each country
+    setLoadingStates(true);
+    setStateLoadingText(`Loading verified states & communities for ${newCountry}...`);
+
+    setTimeout(() => {
+      setLoadingStates(false);
+      setStateLoadingText("");
+    }, 2800);
+  };
+
   // ── Guard step 2 advancement ──────────────────────────────────────
+  const digitsOnly = (formData.phone || "").replace(/[^\d]/g, "");
+  const isPhoneValid = digitsOnly.length >= 7 && digitsOnly.length <= 15 && !phoneError;
+  const isDobValid = formData.dateOfBirth.trim().length > 0 && formData.dateOfBirth <= maxDate && !dobError;
+
   const step2Valid = (
     formData.firstName.trim().length > 0 &&
-    formData.lastName.trim().length > 0 &&
+    (formData.surname || formData.lastName).trim().length > 0 &&
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) &&
-    /^\+2347[\d]{9}$|^\+2348[\d]{9}$|^\+234[1-9][\d]{9}$/.test(formData.phone) &&
-    formData.dateOfBirth.trim().length > 0 &&
+    isPhoneValid &&
+    isDobValid &&
     formData.gender.trim().length > 0 &&
     formData.state.trim().length > 0 &&
+    !loadingStates &&
     metCount === 5
   );
 
@@ -136,20 +302,30 @@ export default function RegisterPage() {
       if (step === 2 && !step2Valid) {
         if (metCount < 5) {
           setError("Please ensure your password meets all required security rules before proceeding.");
-        } else if (phoneError || !/^\+234[1-9]\d{9}$/.test(formData.phone)) {
-          setError("Please enter a valid Nigerian phone number starting with +234.");
+        } else if (!isPhoneValid) {
+          setError("Please enter a valid phone number with your country code (e.g. +234 801 234 5678 or +1 555 123 4567).");
+        } else if (!isDobValid) {
+          setError("Date of birth entry incorrect");
         } else if (emailError || !formData.email.includes("@")) {
           setError("Please enter a valid email address.");
+        } else if (loadingStates) {
+          setError("Please wait while states/communities are loading for your selected country.");
+        } else if (!formData.state.trim()) {
+          setError("Please select your state, province, or community.");
         }
         return;
       }
       setStep(step + 1);
     } else {
       try {
+        const sur = (formData.surname || formData.lastName || "").trim();
+        const first = formData.firstName.trim();
         const payload = {
           email: formData.email,
           password: formData.password,
-          fullName: `${formData.firstName} ${formData.lastName}`.trim(),
+          firstName: first,
+          surname: sur,
+          fullName: `${first} ${sur}`.trim(),
           phone: formData.phone,
           dateOfBirth: formData.dateOfBirth,
           role: formData.role,
@@ -457,20 +633,23 @@ export default function RegisterPage() {
                       required
                       type="text"
                       value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, firstName: capitalizeFirstLetter(e.target.value) })}
                       style={{ width: "100%", padding: "12px 14px", borderRadius: "12px", border: "1px solid var(--border)", outline: "none", fontSize: "0.95rem", fontFamily: "var(--font-b)" }}
                       placeholder="Jane"
                     />
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--text-3)", marginBottom: "6px", textTransform: "uppercase" }}>
-                      Last Name
+                      Surname
                     </label>
                     <input
                       required
                       type="text"
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      value={formData.surname || formData.lastName}
+                      onChange={(e) => {
+                        const val = capitalizeFirstLetter(e.target.value);
+                        setFormData({ ...formData, surname: val, lastName: val });
+                      }}
                       style={{ width: "100%", padding: "12px 14px", borderRadius: "12px", border: "1px solid var(--border)", outline: "none", fontSize: "0.95rem", fontFamily: "var(--font-b)" }}
                       placeholder="Doe"
                     />
@@ -543,7 +722,7 @@ export default function RegisterPage() {
                     )}
                     {emailError && (
                       <p style={{ margin: "5px 0 0", fontSize: "0.78rem", color: "#ef4444", display: "flex", alignItems: "center", gap: "4px" }}>
-                        ⚠️ {emailError}
+                        {emailError}
                       </p>
                     )}
                     {formData.email && !emailError && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) && (
@@ -553,17 +732,20 @@ export default function RegisterPage() {
 
                   {/* ── Phone ── */}
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--text-3)", marginBottom: "6px", textTransform: "uppercase" }}>
-                      Phone Number
+                    <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.8rem", fontWeight: 700, color: "var(--text-3)", marginBottom: "6px", textTransform: "uppercase" }}>
+                      <span>Phone Number *</span>
+                      <span style={{ color: "var(--gold)", fontSize: "0.74rem", fontWeight: 700 }}>
+                        {currentCountryData.flag} {currentCountryData.dialCode}
+                      </span>
                     </label>
                     <input
                       required
                       type="tel"
-                      value={formData.phone || "+234"}
+                      value={formData.phone}
                       onChange={(e) => handlePhoneChange(e.target.value)}
                       onKeyDown={(e) => {
-                        // Disallow non-numeric keys except Backspace/Delete/Arrow
-                        if (!/[\d]/.test(e.key) && !["Backspace","Delete","ArrowLeft","ArrowRight","Tab"].includes(e.key)) {
+                        // Allow digits, +, spaces, backspace, delete, navigation
+                        if (!/[\d+]/.test(e.key) && !["Backspace","Delete","ArrowLeft","ArrowRight","Tab"," "].includes(e.key)) {
                           e.preventDefault();
                         }
                       }}
@@ -576,20 +758,19 @@ export default function RegisterPage() {
                         fontSize: "0.95rem",
                         fontFamily: "var(--font-b)"
                       }}
-                      placeholder="+234 801 234 5678"
-                      maxLength={14}
+                      placeholder={currentCountryData.placeholder || "+234 801 234 5678"}
+                      maxLength={18}
                     />
                     {phoneError && (
                       <p style={{ margin: "5px 0 0", fontSize: "0.78rem", color: "#ef4444", display: "flex", alignItems: "center", gap: "4px" }}>
-                        ⚠️ {phoneError}
+                        {phoneError}
                       </p>
                     )}
-                    {formData.phone && !phoneError && formData.phone.length >= 14 && (
-                      <p style={{ margin: "5px 0 0", fontSize: "0.78rem", color: "#10b981", display: "flex", alignItems: "center", gap: "4px" }}>✅ Valid phone number</p>
+                    {formData.phone && !phoneError && digitsOnly.length >= 7 && (
+                      <p style={{ margin: "5px 0 0", fontSize: "0.78rem", color: "#10b981", display: "flex", alignItems: "center", gap: "4px" }}>
+                        ✅ Valid phone number
+                      </p>
                     )}
-                    <p style={{ margin: "4px 0 0", fontSize: "0.74rem", color: "var(--text-3)" }}>
-                      🇳🇬 Nigerian numbers only. Starts with +234, no leading 0.
-                    </p>
                   </div>
 
                 </div>
@@ -684,10 +865,22 @@ export default function RegisterPage() {
                     <input
                       required
                       type="date"
+                      max={maxDate}
                       value={formData.dateOfBirth}
-                      onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-                      style={{ width: "100%", padding: "12px 14px", borderRadius: "12px", border: "1px solid var(--border)", outline: "none", fontSize: "0.95rem", fontFamily: "var(--font-b)", background: "var(--white)", color: formData.dateOfBirth ? "var(--navy)" : "var(--text-3)" }}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val > maxDate) {
+                          setDobError("Date of birth entry incorrect");
+                        } else {
+                          setDobError("");
+                        }
+                        setFormData({ ...formData, dateOfBirth: val });
+                      }}
+                      style={{ width: "100%", padding: "12px 14px", borderRadius: "12px", border: `1px solid ${dobError ? "#ef4444" : "var(--border)"}`, outline: "none", fontSize: "0.95rem", fontFamily: "var(--font-b)", background: "var(--white)", color: formData.dateOfBirth ? "var(--navy)" : "var(--text-3)" }}
                     />
+                    {dobError && (
+                      <p style={{ margin: "4px 0 0", fontSize: "0.75rem", color: "#ef4444" }}>{dobError}</p>
+                    )}
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--text-3)", marginBottom: "6px", textTransform: "uppercase" }}>
@@ -702,12 +895,11 @@ export default function RegisterPage() {
                       <option value="" disabled>Select gender</option>
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
-                      <option value="Prefer not to say">Prefer not to say</option>
                     </select>
                   </div>
                 </div>
 
-                {/* Row 5: Country & State */}
+                {/* Row 5: Country & State / Community */}
                 <div style={{ display: "flex", gap: "16px" }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--text-3)", marginBottom: "6px", textTransform: "uppercase" }}>
@@ -716,31 +908,67 @@ export default function RegisterPage() {
                     <select
                       required
                       value={formData.country}
-                      onChange={(e) => setFormData({ ...formData, country: e.target.value, state: "" })}
+                      onChange={(e) => handleCountryChange(e.target.value)}
                       style={{ width: "100%", padding: "12px 14px", borderRadius: "12px", border: "1px solid var(--border)", outline: "none", fontSize: "0.95rem", fontFamily: "var(--font-b)", background: "var(--white)" }}
                     >
-                      <option value="Nigeria">Nigeria</option>
-                      <option value="Ghana">Ghana</option>
-                      <option value="Kenya">Kenya</option>
-                      <option value="South Africa">South Africa</option>
-                      <option value="Other">Other</option>
+                      {Object.keys(COUNTRY_DATA).map((cKey) => (
+                        <option key={cKey} value={cKey}>
+                          {COUNTRY_DATA[cKey].flag} {COUNTRY_DATA[cKey].name}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 700, color: "var(--text-3)", marginBottom: "6px", textTransform: "uppercase" }}>
-                      State *
+                    <label style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "0.8rem", fontWeight: 700, color: "var(--text-3)", marginBottom: "6px", textTransform: "uppercase" }}>
+                      <span>{currentCountryData.stateLabel || "State / Community"} *</span>
+                      {loadingStates && (
+                        <span style={{ color: "var(--gold)", fontSize: "0.74rem", textTransform: "none", fontWeight: 700 }}>
+                          ⏳ Loading...
+                        </span>
+                      )}
                     </label>
-                    <select
-                      required
-                      value={formData.state}
-                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                      style={{ width: "100%", padding: "12px 14px", borderRadius: "12px", border: "1px solid var(--border)", outline: "none", fontSize: "0.95rem", fontFamily: "var(--font-b)", background: "var(--white)", color: formData.state ? "var(--navy)" : "var(--text-3)" }}
-                    >
-                      <option value="" disabled>Select state</option>
-                      {NIGERIAN_STATES.map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                    </select>
+                    <div style={{ position: "relative" }}>
+                      <select
+                        required
+                        disabled={loadingStates}
+                        value={formData.state}
+                        onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                        style={{
+                          width: "100%",
+                          padding: "12px 14px",
+                          borderRadius: "12px",
+                          border: `1px solid ${loadingStates ? "var(--gold)" : "var(--border)"}`,
+                          outline: "none",
+                          fontSize: "0.95rem",
+                          fontFamily: "var(--font-b)",
+                          background: loadingStates ? "#fafaf9" : "var(--white)",
+                          color: formData.state ? "var(--navy)" : "var(--text-3)",
+                          opacity: loadingStates ? 0.75 : 1,
+                          cursor: loadingStates ? "wait" : "pointer",
+                          transition: "border-color 0.2s ease, background-color 0.2s ease"
+                        }}
+                      >
+                        <option value="" disabled>
+                          {loadingStates ? "Loading locations..." : `Select ${currentCountryData.stateLabel || "state"}`}
+                        </option>
+                        {!loadingStates && currentCountryData.states.map((s) => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+
+                      {loadingStates && (
+                        <div style={{
+                          position: "absolute",
+                          right: "30px",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          pointerEvents: "none",
+                          fontSize: "0.85rem"
+                        }}>
+                          ⏳
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 

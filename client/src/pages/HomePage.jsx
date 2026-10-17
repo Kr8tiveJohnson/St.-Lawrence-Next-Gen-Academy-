@@ -388,6 +388,11 @@ export default function HomePage() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  const getCbtUrl = () => {
+    const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
+    return `http://localhost:5174${token ? `#token=${encodeURIComponent(token)}` : ''}`;
+  };
+
   return (
     <div
       className="product-homepage"
@@ -405,7 +410,7 @@ export default function HomePage() {
         <div className="nav-links hide-on-mobile">
           <a href="#home">Home</a>
           <Link to="/classrooms">Classrooms</Link>
-          <Link to={isLoggedIn ? "/cbt" : "/login?redirect=/cbt"}>CBT Exams</Link>
+          <a href={getCbtUrl()}>CBT Exams</a>
           <Link to="/tips">TIPS</Link>
           <Link to="/resources">Resources</Link>
           <Link to="/groups">Communities</Link>
@@ -453,7 +458,7 @@ export default function HomePage() {
         >
           <a href="#home" onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>Home</a>
           <Link to="/classrooms" onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>Classrooms</Link>
-          <Link to={isLoggedIn ? "/cbt" : "/login?redirect=/cbt"} onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>CBT Exam Practice</Link>
+          <a href={getCbtUrl()} onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>CBT Exam Practice</a>
           <Link to="/tips" onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>TIPS Learning</Link>
           <Link to="/resources" onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>Resource Centre</Link>
           <Link to="/groups" onClick={() => setMenuOpen(false)} style={{ color: "var(--navy)", fontWeight: 700 }}>Communities</Link>

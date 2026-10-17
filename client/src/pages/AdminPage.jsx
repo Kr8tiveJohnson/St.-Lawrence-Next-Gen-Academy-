@@ -1114,134 +1114,6 @@ function AnalyticsTab({ stats }) {
   );
 }
 
-// ─── Admin: Question Bank ─────────────────────────────────────────────────────
-function QuestionBankTab() {
-  const [questions, setQuestions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [filterSubject, setFilterSubject] = useState("ALL");
-  const [filterExam, setFilterExam] = useState("ALL");
-  const [showModal, setShowModal] = useState(false);
-  const [editItem, setEditItem] = useState(null);
-  const [form, setForm] = useState({ examType: "JAMB", subject: "Mathematics", targetClass: "GENERAL", topic: "", year: "", difficulty: "MEDIUM", questionText: "", optionA: "", optionB: "", optionC: "", optionD: "", correctOption: "A", explanation: "" });
-  const [saving, setSaving] = useState(false);
-
-  const adminHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem("adminToken")}` });
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ limit: 100 });
-      if (filterSubject !== "ALL") params.set("subject", filterSubject);
-      if (filterExam !== "ALL") params.set("examType", filterExam);
-      if (search) params.set("search", search);
-      const { data } = await client.get(`/cbt/questions?${params}`, { headers: adminHeaders() });
-      setQuestions(data.questions || []);
-    } catch (e) { console.error(e); }
-    setLoading(false);
-  }, [filterSubject, filterExam, search]);
-
-  useEffect(() => { load(); }, [load]);
-
-  const openAdd = () => { setEditItem(null); setForm({ examType: "JAMB", subject: "Mathematics", targetClass: "GENERAL", topic: "", year: "", difficulty: "MEDIUM", questionText: "", optionA: "", optionB: "", optionC: "", optionD: "", correctOption: "A", explanation: "" }); setShowModal(true); };
-  const openEdit = (q) => { setEditItem(q); const opts = Array.isArray(q.options) ? q.options : []; setForm({ examType: q.examType, subject: q.subject, targetClass: q.targetClass || "GENERAL", topic: q.topic, year: q.year || "", difficulty: q.difficulty, questionText: q.questionText, optionA: opts[0]?.text || "", optionB: opts[1]?.text || "", optionC: opts[2]?.text || "", optionD: opts[3]?.text || "", correctOption: q.correctOption, explanation: q.explanation || "" }); setShowModal(true); };
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    const payload = { ...form, year: form.year ? parseInt(form.year) : null, options: [{id:"A",text:form.optionA},{id:"B",text:form.optionB},{id:"C",text:form.optionC},{id:"D",text:form.optionD}] };
-    delete payload.optionA; delete payload.optionB; delete payload.optionC; delete payload.optionD;
-    try {
-      if (editItem) { await client.put(`/cbt/questions/${editItem.id}`, payload, { headers: adminHeaders() }); }
-      else { await client.post("/cbt/questions", payload, { headers: adminHeaders() }); }
-      setShowModal(false); load();
-    } catch (e) { alert("Save failed: " + (e.response?.data?.error || e.message)); }
-    setSaving(false);
-  };
-
-  const handleDelete = async (id) => {
-    if (!confirm("Delete this question permanently?")) return;
-    try { await client.delete(`/cbt/questions/${id}`, { headers: adminHeaders() }); load(); }
-    catch (e) { alert("Delete failed"); }
-  };
-
-  const inputStyle = { width: "100%", padding: "10px 13px", border: "1px solid #e2e8f0", borderRadius: "9px", fontSize: "0.88rem", fontFamily: "inherit", outline: "none", color: "#0f2144", boxSizing: "border-box" };
-  const labelStyle = { display: "block", fontSize: "0.75rem", fontWeight: 700, color: "#64748b", marginBottom: "5px", textTransform: "uppercase", letterSpacing: "0.05em" };
-
-  return (
-    <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #f0f0f0" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
-        <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#0f2144" }}>Question Bank ({questions.length})</h2>
-        <button onClick={openAdd} style={{ background: "#0f2144", color: "#d4a853", border: "none", borderRadius: 10, padding: "9px 18px", fontWeight: 700, fontSize: "0.88rem", cursor: "pointer", fontFamily: "inherit" }}>+ Add Question</button>
-      </div>
-      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search questions..." style={{ ...inputStyle, width: 220, flex: "none" }} />
-        <select value={filterExam} onChange={e => setFilterExam(e.target.value)} style={{ ...inputStyle, width: 140, flex: "none" }}>
-          {["ALL","JAMB","WAEC","NECO","INTERNAL"].map(v => <option key={v}>{v}</option>)}
-        </select>
-        <select value={filterSubject} onChange={e => setFilterSubject(e.target.value)} style={{ ...inputStyle, width: 160, flex: "none" }}>
-          {["ALL","Mathematics","English Language","Physics","Chemistry","Biology","Economics","Government","Commerce","Geography","Literature"].map(v => <option key={v}>{v}</option>)}
-        </select>
-      </div>
-      {loading ? <p style={{ color: "#9ca3af", textAlign: "center", padding: 24 }}>Loading questions...</p> : (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.86rem" }}>
-            <thead><tr style={{ borderBottom: "2px solid #f1f5f9" }}>
-              {["Exam","Subject","Topic","Difficulty","Year","Actions"].map(h => <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: "0.73rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>{h}</th>)}
-            </tr></thead>
-            <tbody>
-              {questions.map(q => (
-                <tr key={q.id} style={{ borderBottom: "1px solid #f8fafc" }}>
-                  <td style={{ padding: "10px 12px" }}><span style={{ background: "#eff6ff", color: "#3b82f6", padding: "2px 8px", borderRadius: 6, fontSize: "0.76rem", fontWeight: 700 }}>{q.examType}</span></td>
-                  <td style={{ padding: "10px 12px", fontWeight: 600, color: "#0f2144" }}>{q.subject}</td>
-                  <td style={{ padding: "10px 12px", color: "#374151", maxWidth: 200 }}>{q.topic}</td>
-                  <td style={{ padding: "10px 12px" }}><span style={{ background: q.difficulty==="HARD"?"#fef2f2":q.difficulty==="EASY"?"#f0fdf4":"#fefce8", color: q.difficulty==="HARD"?"#dc2626":q.difficulty==="EASY"?"#16a34a":"#ca8a04", padding: "2px 8px", borderRadius: 6, fontSize: "0.76rem", fontWeight: 700 }}>{q.difficulty}</span></td>
-                  <td style={{ padding: "10px 12px", color: "#6b7280" }}>{q.year || "—"}</td>
-                  <td style={{ padding: "10px 12px" }}>
-                    <button onClick={() => openEdit(q)} style={{ background: "#f0f9ff", border: "1px solid #bae6fd", color: "#0284c7", borderRadius: 7, padding: "5px 12px", fontWeight: 600, fontSize: "0.78rem", cursor: "pointer", fontFamily: "inherit", marginRight: 6 }}>Edit</button>
-                    <button onClick={() => handleDelete(q.id)} style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", borderRadius: 7, padding: "5px 12px", fontWeight: 600, fontSize: "0.78rem", cursor: "pointer", fontFamily: "inherit" }}>Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {questions.length === 0 && <p style={{ textAlign: "center", color: "#9ca3af", padding: 20 }}>No questions match current filters.</p>}
-        </div>
-      )}
-
-      {showModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={e => e.target===e.currentTarget && setShowModal(false)}>
-          <div style={{ background: "#fff", borderRadius: 20, padding: 32, width: "100%", maxWidth: 640, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 25px 60px rgba(0,0,0,0.25)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-              <h2 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#0f2144" }}>{editItem ? "Edit Question" : "Add New Question"}</h2>
-              <button onClick={() => setShowModal(false)} style={{ background: "#f1f5f9", border: "none", borderRadius: "50%", width: 32, height: 32, cursor: "pointer", fontSize: "1rem" }}>✕</button>
-            </div>
-            <form onSubmit={handleSave}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <div><label style={labelStyle}>Exam Type</label><select value={form.examType} onChange={e => setForm(f=>({...f,examType:e.target.value}))} style={inputStyle}>{["JAMB","WAEC","NECO","INTERNAL"].map(v=><option key={v}>{v}</option>)}</select></div>
-                <div><label style={labelStyle}>Subject</label><select value={form.subject} onChange={e => setForm(f=>({...f,subject:e.target.value}))} style={inputStyle}>{["Mathematics","English Language","Physics","Chemistry","Biology","Economics","Government","Commerce","Geography","Literature"].map(v=><option key={v}>{v}</option>)}</select></div>
-                <div><label style={labelStyle}>Topic</label><input value={form.topic} onChange={e=>setForm(f=>({...f,topic:e.target.value}))} placeholder="e.g. Quadratic Equations" required style={inputStyle}/></div>
-                <div><label style={labelStyle}>Year (Optional)</label><input type="number" value={form.year} onChange={e=>setForm(f=>({...f,year:e.target.value}))} placeholder="e.g. 2023" style={inputStyle}/></div>
-                <div><label style={labelStyle}>Difficulty</label><select value={form.difficulty} onChange={e=>setForm(f=>({...f,difficulty:e.target.value}))} style={inputStyle}><option>EASY</option><option>MEDIUM</option><option>HARD</option></select></div>
-                <div><label style={labelStyle}>Target Class</label><input value={form.targetClass} onChange={e=>setForm(f=>({...f,targetClass:e.target.value}))} placeholder="GENERAL / SSS 3" style={inputStyle}/></div>
-              </div>
-              <div style={{ marginTop: 12 }}><label style={labelStyle}>Question Text</label><textarea value={form.questionText} onChange={e=>setForm(f=>({...f,questionText:e.target.value}))} required rows={3} style={{...inputStyle,resize:"vertical"}}/></div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginTop: 10 }}>
-                <div><label style={labelStyle}>Option A</label><input value={form.optionA} onChange={e=>setForm(f=>({...f,optionA:e.target.value}))} required style={inputStyle}/></div>
-                <div><label style={labelStyle}>Option B</label><input value={form.optionB} onChange={e=>setForm(f=>({...f,optionB:e.target.value}))} required style={inputStyle}/></div>
-                <div><label style={labelStyle}>Option C</label><input value={form.optionC} onChange={e=>setForm(f=>({...f,optionC:e.target.value}))} required style={inputStyle}/></div>
-                <div><label style={labelStyle}>Option D</label><input value={form.optionD} onChange={e=>setForm(f=>({...f,optionD:e.target.value}))} required style={inputStyle}/></div>
-              </div>
-              <div style={{ marginTop: 10 }}><label style={labelStyle}>Correct Answer</label><select value={form.correctOption} onChange={e=>setForm(f=>({...f,correctOption:e.target.value}))} style={inputStyle}><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
-              <div style={{ marginTop: 10 }}><label style={labelStyle}>Explanation (Worked Solution)</label><textarea value={form.explanation} onChange={e=>setForm(f=>({...f,explanation:e.target.value}))} rows={3} placeholder="Explain the correct answer step-by-step..." style={{...inputStyle,resize:"vertical"}}/></div>
-              <button type="submit" disabled={saving} style={{ marginTop: 20, width: "100%", padding: 13, background: saving?"#9ca3af":"#0f2144", color: "#d4a853", border: "none", borderRadius: 12, fontWeight: 700, fontSize: "0.95rem", cursor: saving?"not-allowed":"pointer", fontFamily: "inherit" }}>{saving?"Saving...":editItem?"Save Changes":"Add Question"}</button>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─── Admin: TIPS Manager ──────────────────────────────────────────────────────
 function TipsManagerTab() {
@@ -1468,6 +1340,749 @@ function ResourcesManagerTab() {
               <button type="submit" disabled={saving} style={{ marginTop: 20, width: "100%", padding: 13, background: saving?"#9ca3af":"#0f2144", color: "#d4a853", border: "none", borderRadius: 12, fontWeight: 700, fontSize: "0.95rem", cursor: saving?"not-allowed":"pointer", fontFamily: "inherit" }}>{saving?"Saving...":editItem?"Save Changes":"Add Resource"}</button>
             </form>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Section: Question Bank (Full CBT Management System) ─────────────────────
+function QuestionBankTab() {
+  const [view, setView] = useState('list'); // 'list' | 'create' | 'edit' | 'import' | 'ai' | 'history'
+  const [questions, setQuestions] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState(null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  // Filters
+  const [filters, setFilters] = useState({
+    examType: 'ALL', subject: 'ALL', status: 'ALL', origin: 'ALL',
+    difficulty: 'ALL', search: '', isPublished: 'ALL'
+  });
+  const [filterSearch, setFilterSearch] = useState('');
+
+  // Edit / Create form
+  const EMPTY_FORM = {
+    examType: 'JAMB', subject: 'Mathematics', topic: '', subTopic: '',
+    targetClass: 'SSS 3', year: '', difficulty: 'MEDIUM',
+    questionType: 'MULTIPLE_CHOICE', questionText: '',
+    optionA: '', optionB: '', optionC: '', optionD: '',
+    correctOption: 'A', explanation: '', origin: 'ORIGINAL_PRACTICE',
+    sourceName: '', status: 'APPROVED', isPublished: true
+  };
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [editingId, setEditingId] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  // Import
+  const [importText, setImportText] = useState('');
+  const [importType, setImportType] = useState('CSV');
+  const [importResult, setImportResult] = useState(null);
+  const [importLoading, setImportLoading] = useState(false);
+
+  // AI Generate
+  const [aiForm, setAiForm] = useState({ examType: 'JAMB', subject: 'Mathematics', topic: 'Algebra', difficulty: 'MEDIUM', count: 3 });
+  const [aiResult, setAiResult] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  // Import History
+  const [importHistory, setImportHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  const headers = () => ({ Authorization: `Bearer ${localStorage.getItem('adminToken')}` });
+
+  const loadStats = useCallback(async () => {
+    try {
+      const { data } = await client.get('/cbt/admin/stats', { headers: headers() });
+      setStats(data);
+    } catch (e) { /* silent */ }
+  }, []);
+
+  const loadQuestions = useCallback(async (p = 1) => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ page: p, limit: 20 });
+      if (filters.examType !== 'ALL') params.set('examType', filters.examType);
+      if (filters.subject !== 'ALL') params.set('subject', filters.subject);
+      if (filters.status !== 'ALL') params.set('status', filters.status);
+      if (filters.origin !== 'ALL') params.set('origin', filters.origin);
+      if (filters.difficulty !== 'ALL') params.set('difficulty', filters.difficulty);
+      if (filters.isPublished !== 'ALL') params.set('isPublished', filters.isPublished);
+      if (filterSearch.trim()) params.set('search', filterSearch.trim());
+      const { data } = await client.get(`/cbt/questions?${params}`, { headers: headers() });
+      setQuestions(data.questions || []);
+      setTotal(data.total || 0);
+      setTotalPages(data.totalPages || 1);
+      setPage(p);
+    } catch (e) { showToast('Failed to load questions', 'error'); }
+    setLoading(false);
+  }, [filters, filterSearch]);
+
+  useEffect(() => { loadQuestions(1); loadStats(); }, [loadQuestions, loadStats]);
+
+  const applySearch = (e) => { e.preventDefault(); loadQuestions(1); };
+
+  // Select all toggle
+  const allSelected = questions.length > 0 && questions.every(q => selectedIds.includes(q.id));
+  const toggleAll = () => setSelectedIds(allSelected ? [] : questions.map(q => q.id));
+  const toggleOne = (id) => setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
+  // Bulk action
+  const bulkAction = async (action) => {
+    if (selectedIds.length === 0) return showToast('Select at least one question first.', 'error');
+    if (!confirm(`${action} ${selectedIds.length} question(s)?`)) return;
+    setBulkLoading(true);
+    try {
+      const { data } = await client.post('/cbt/questions/bulk', { ids: selectedIds, action }, { headers: headers() });
+      showToast(data.message || 'Done');
+      setSelectedIds([]);
+      loadQuestions(page);
+      loadStats();
+    } catch (e) { showToast('Bulk action failed', 'error'); }
+    setBulkLoading(false);
+  };
+
+  // Delete single
+  const deleteOne = async (id) => {
+    if (!confirm('Delete this question permanently?')) return;
+    try {
+      await client.delete(`/cbt/questions/${id}?soft=false`, { headers: headers() });
+      showToast('Question deleted');
+      loadQuestions(page);
+      loadStats();
+    } catch { showToast('Delete failed', 'error'); }
+  };
+
+  // Archive single
+  const archiveOne = async (id) => {
+    try {
+      await client.delete(`/cbt/questions/${id}?soft=true`, { headers: headers() });
+      showToast('Question archived');
+      loadQuestions(page);
+    } catch { showToast('Archive failed', 'error'); }
+  };
+
+  // Open edit
+  const openEdit = (q) => {
+    const opts = Array.isArray(q.options) ? q.options : [];
+    const getOpt = (id) => (opts.find(o => o.id === id) || {}).text || '';
+    setForm({
+      examType: q.examType || 'JAMB', subject: q.subject || 'Mathematics',
+      topic: q.topic || '', subTopic: q.subTopic || '',
+      targetClass: q.targetClass || 'SSS 3', year: q.year || '',
+      difficulty: q.difficulty || 'MEDIUM', questionType: q.questionType || 'MULTIPLE_CHOICE',
+      questionText: q.questionText || '',
+      optionA: getOpt('A'), optionB: getOpt('B'), optionC: getOpt('C'), optionD: getOpt('D'),
+      correctOption: q.correctOption || 'A', explanation: q.explanation || '',
+      origin: q.origin || 'ORIGINAL_PRACTICE', sourceName: q.sourceName || '',
+      status: q.status || 'APPROVED', isPublished: q.isPublished !== false
+    });
+    setEditingId(q.id);
+    setView('edit');
+  };
+
+  // Save (create or update)
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    const options = [
+      { id: 'A', text: form.optionA }, { id: 'B', text: form.optionB },
+      { id: 'C', text: form.optionC }, { id: 'D', text: form.optionD }
+    ].filter(o => o.text.trim());
+    const payload = {
+      examType: form.examType, subject: form.subject, topic: form.topic,
+      subTopic: form.subTopic || null, targetClass: form.targetClass,
+      year: form.year ? parseInt(form.year) : null, difficulty: form.difficulty,
+      questionType: form.questionType, questionText: form.questionText,
+      options, correctOption: form.correctOption, explanation: form.explanation || null,
+      origin: form.origin, sourceName: form.sourceName || null,
+      status: form.status, isPublished: form.isPublished
+    };
+    try {
+      if (editingId) {
+        await client.put(`/cbt/questions/${editingId}`, payload, { headers: headers() });
+        showToast('Question updated successfully');
+      } else {
+        await client.post('/cbt/questions', payload, { headers: headers() });
+        showToast('Question created successfully');
+      }
+      setView('list'); setForm(EMPTY_FORM); setEditingId(null);
+      loadQuestions(page); loadStats();
+    } catch (e) {
+      showToast(e.response?.data?.error || 'Save failed', 'error');
+    }
+    setSaving(false);
+  };
+
+  // Import submit
+  const handleImport = async (e) => {
+    e.preventDefault();
+    if (!importText.trim()) return showToast('Paste CSV or JSON content first', 'error');
+    setImportLoading(true); setImportResult(null);
+    try {
+      const { data } = await client.post('/cbt/questions/import',
+        { fileContent: importText, fileType: importType, fileName: `admin_import.${importType.toLowerCase()}` },
+        { headers: headers() }
+      );
+      setImportResult(data.summary);
+      showToast(data.message || 'Import complete');
+      loadStats();
+    } catch (e) {
+      showToast(e.response?.data?.error || 'Import failed', 'error');
+    }
+    setImportLoading(false);
+  };
+
+  const downloadTemplate = () => {
+    window.open('/api/cbt/questions/import-template', '_blank');
+  };
+
+  // AI generate
+  const handleAiGenerate = async (e) => {
+    e.preventDefault();
+    setAiLoading(true); setAiResult(null);
+    try {
+      const { data } = await client.post('/cbt/questions/ai-generate', aiForm, { headers: headers() });
+      setAiResult(data.questions || []);
+      showToast(`${data.questions?.length || 0} questions generated & saved as Pending Review`);
+      loadStats();
+    } catch (e) {
+      showToast(e.response?.data?.error || 'AI generation failed', 'error');
+    }
+    setAiLoading(false);
+  };
+
+  // Load import history
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const { data } = await client.get('/cbt/questions/import-history', { headers: headers() });
+      setImportHistory(data.logs || []);
+    } catch { /* silent */ }
+    setHistoryLoading(false);
+  }, []);
+
+  useEffect(() => { if (view === 'history') loadHistory(); }, [view, loadHistory]);
+
+  // ── Styles ──────────────────────────────────────────────────────────────────
+  const inp = { width: '100%', padding: '9px 12px', border: '1px solid #e2e8f0', borderRadius: '9px', fontSize: '0.88rem', fontFamily: 'inherit', outline: 'none', color: '#0f2144', boxSizing: 'border-box', background: '#fff' };
+  const lbl = { display: 'block', fontSize: '0.73rem', fontWeight: 700, color: '#64748b', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' };
+  const btn = (bg, color, extra = {}) => ({ background: bg, color, border: 'none', borderRadius: '9px', padding: '8px 16px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', fontFamily: 'inherit', ...extra });
+  const statusColor = { APPROVED: '#16a34a', PENDING_REVIEW: '#d97706', DRAFT: '#64748b', REJECTED: '#dc2626', ARCHIVED: '#94a3b8' };
+  const examColor = { JAMB: '#6366f1', WAEC: '#0ea5e9', NECO: '#f97316', INTERNAL: '#22c55e' };
+
+  const EXAM_TYPES = ['JAMB', 'WAEC', 'NECO', 'INTERNAL'];
+  const SUBJECTS = ['Mathematics', 'English Language', 'Physics', 'Chemistry', 'Biology', 'Economics', 'Commerce', 'Literature', 'Geography', 'Government', 'Civic Education', 'Agricultural Science', 'Further Mathematics'];
+  const DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD'];
+  const ORIGINS = ['PAST_QUESTION', 'ORIGINAL_PRACTICE', 'AI_GENERATED'];
+  const STATUSES = ['DRAFT', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'ARCHIVED'];
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* Toast Notification */}
+      {toast && (
+        <div style={{
+          position: 'fixed', top: 20, right: 24, zIndex: 9999,
+          background: toast.type === 'error' ? '#fef2f2' : '#f0fdf4',
+          border: `1px solid ${toast.type === 'error' ? '#fecaca' : '#bbf7d0'}`,
+          color: toast.type === 'error' ? '#dc2626' : '#16a34a',
+          padding: '12px 20px', borderRadius: '12px', fontWeight: 700,
+          fontSize: '0.85rem', boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+          maxWidth: '380px'
+        }}>
+          {toast.type === 'error' ? '✕ ' : '✓ '}{toast.msg}
+        </div>
+      )}
+
+      {/* ── STATS ROW ───────────────────────────────────────────────────────── */}
+      {stats && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
+          {[
+            { label: 'Total Questions', value: stats.total, color: '#6366f1' },
+            { label: 'JAMB', value: stats.byExam?.JAMB || 0, color: '#6366f1' },
+            { label: 'WAEC', value: stats.byExam?.WAEC || 0, color: '#0ea5e9' },
+            { label: 'NECO', value: stats.byExam?.NECO || 0, color: '#f97316' },
+            { label: 'Internal', value: stats.byExam?.INTERNAL || 0, color: '#22c55e' },
+            { label: 'Published', value: stats.publishedCount || 0, color: '#16a34a' },
+            { label: 'Pending Review', value: stats.byStatus?.PENDING_REVIEW || 0, color: '#d97706' },
+            { label: 'Rejected', value: stats.byStatus?.REJECTED || 0, color: '#dc2626' },
+          ].map(s => (
+            <div key={s.label} style={{ background: '#fff', borderRadius: '14px', padding: '16px', border: '1px solid #f0f4f8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+              <div style={{ fontSize: '1.6rem', fontWeight: 900, color: s.color }}>{s.value}</div>
+              <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600, marginTop: '2px' }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── ACTION TOOLBAR ──────────────────────────────────────────────────── */}
+      <div style={{ background: '#fff', borderRadius: '16px', padding: '16px 20px', border: '1px solid #f0f4f8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+          {[
+            { id: 'list', label: '📋 All Questions' },
+            { id: 'create', label: '+ Create Question' },
+            { id: 'import', label: '📥 Bulk Import' },
+            { id: 'ai', label: '🤖 AI Generate' },
+            { id: 'history', label: '📜 Import History' },
+          ].map(v => (
+            <button key={v.id} onClick={() => { setView(v.id); if (v.id === 'list') { setEditingId(null); setForm(EMPTY_FORM); } }}
+              style={btn(view === v.id ? '#0f2144' : '#f1f5f9', view === v.id ? '#d4a853' : '#374151', { transition: 'all 0.15s' })}>
+              {v.label}
+            </button>
+          ))}
+
+          {/* Bulk actions (only when items selected) */}
+          {selectedIds.length > 0 && (
+            <>
+              <div style={{ width: 1, height: 28, background: '#e2e8f0', margin: '0 4px' }} />
+              <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>{selectedIds.length} selected</span>
+              {[
+                { action: 'APPROVE', label: '✓ Approve', bg: '#f0fdf4', color: '#16a34a' },
+                { action: 'REJECT', label: '✕ Reject', bg: '#fef2f2', color: '#dc2626' },
+                { action: 'ARCHIVE', label: '📦 Archive', bg: '#f8fafc', color: '#64748b' },
+                { action: 'DELETE', label: '🗑 Delete', bg: '#fef2f2', color: '#dc2626' },
+              ].map(a => (
+                <button key={a.action} disabled={bulkLoading} onClick={() => bulkAction(a.action)}
+                  style={btn(a.bg, a.color, { opacity: bulkLoading ? 0.6 : 1 })}>
+                  {a.label}
+                </button>
+              ))}
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/* VIEW: LIST ──────────────────────────────────────────────────────────  */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {view === 'list' && (
+        <div style={{ background: '#fff', borderRadius: '16px', padding: '20px', border: '1px solid #f0f4f8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+          {/* Filter Bar */}
+          <form onSubmit={applySearch} style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px', alignItems: 'center' }}>
+            <input value={filterSearch} onChange={e => setFilterSearch(e.target.value)} placeholder="Search question text, topic, source..." style={{ ...inp, flex: '1', minWidth: '200px' }} />
+            {[
+              { key: 'examType', opts: ['ALL', ...EXAM_TYPES], label: 'Exam' },
+              { key: 'subject', opts: ['ALL', ...SUBJECTS], label: 'Subject' },
+              { key: 'status', opts: ['ALL', ...STATUSES], label: 'Status' },
+              { key: 'difficulty', opts: ['ALL', ...DIFFICULTIES], label: 'Difficulty' },
+              { key: 'origin', opts: ['ALL', ...ORIGINS], label: 'Origin' },
+            ].map(f => (
+              <select key={f.key} value={filters[f.key]}
+                onChange={e => setFilters(prev => ({ ...prev, [f.key]: e.target.value }))}
+                style={{ ...inp, width: 'auto', flex: 'none' }}>
+                {f.opts.map(o => <option key={o}>{o}</option>)}
+              </select>
+            ))}
+            <button type="submit" style={btn('#0f2144', '#d4a853')}>Search</button>
+            <button type="button" onClick={() => { setFilters({ examType: 'ALL', subject: 'ALL', status: 'ALL', origin: 'ALL', difficulty: 'ALL', search: '', isPublished: 'ALL' }); setFilterSearch(''); loadQuestions(1); }}
+              style={btn('#f1f5f9', '#374151')}>Clear</button>
+          </form>
+
+          {/* Table */}
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
+                  <th style={{ padding: '8px 10px', width: 32 }}>
+                    <input type="checkbox" checked={allSelected} onChange={toggleAll} />
+                  </th>
+                  {['Exam', 'Subject', 'Topic', 'Question', 'Difficulty', 'Status', 'Origin', 'Actions'].map(h => (
+                    <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={9} style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>Loading questions...</td></tr>
+                ) : questions.length === 0 ? (
+                  <tr><td colSpan={9} style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>No questions found. Try adjusting filters or add questions.</td></tr>
+                ) : questions.map(q => (
+                  <tr key={q.id} style={{ borderBottom: '1px solid #f8fafc', background: selectedIds.includes(q.id) ? '#faf5ff' : 'transparent' }}>
+                    <td style={{ padding: '8px 10px' }}>
+                      <input type="checkbox" checked={selectedIds.includes(q.id)} onChange={() => toggleOne(q.id)} />
+                    </td>
+                    <td style={{ padding: '8px 10px' }}>
+                      <span style={{ background: `${examColor[q.examType] || '#6b7280'}18`, color: examColor[q.examType] || '#6b7280', padding: '2px 7px', borderRadius: '5px', fontWeight: 700, fontSize: '0.72rem' }}>{q.examType}</span>
+                    </td>
+                    <td style={{ padding: '8px 10px', color: '#374151', fontWeight: 600, whiteSpace: 'nowrap' }}>{q.subject}</td>
+                    <td style={{ padding: '8px 10px', color: '#6b7280', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{q.topic || '—'}</td>
+                    <td style={{ padding: '8px 10px', color: '#0f2144', maxWidth: '280px' }}>
+                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '280px', fontWeight: 500 }}>
+                        {q.questionText}
+                      </div>
+                    </td>
+                    <td style={{ padding: '8px 10px' }}>
+                      <span style={{ fontSize: '0.72rem', fontWeight: 700, color: q.difficulty === 'EASY' ? '#16a34a' : q.difficulty === 'HARD' ? '#dc2626' : '#d97706' }}>{q.difficulty}</span>
+                    </td>
+                    <td style={{ padding: '8px 10px' }}>
+                      <span style={{ background: `${statusColor[q.status] || '#94a3b8'}15`, color: statusColor[q.status] || '#94a3b8', padding: '2px 7px', borderRadius: '5px', fontWeight: 700, fontSize: '0.7rem' }}>{q.status?.replace('_', ' ')}</span>
+                    </td>
+                    <td style={{ padding: '8px 10px', color: '#94a3b8', fontSize: '0.72rem' }}>{q.origin?.replace('_', ' ')}</td>
+                    <td style={{ padding: '8px 10px' }}>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button onClick={() => openEdit(q)} style={btn('#f0f9ff', '#0284c7', { padding: '4px 10px', fontSize: '0.75rem', border: '1px solid #bae6fd' })}>Edit</button>
+                        <button onClick={() => archiveOne(q.id)} style={btn('#f8fafc', '#64748b', { padding: '4px 10px', fontSize: '0.75rem', border: '1px solid #e2e8f0' })}>Archive</button>
+                        <button onClick={() => deleteOne(q.id)} style={btn('#fef2f2', '#dc2626', { padding: '4px 10px', fontSize: '0.75rem', border: '1px solid #fecaca' })}>Delete</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '16px' }}>
+              <button disabled={page <= 1} onClick={() => loadQuestions(page - 1)} style={btn('#f1f5f9', '#374151', { opacity: page <= 1 ? 0.4 : 1 })}>← Prev</button>
+              <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>Page {page} of {totalPages} ({total} total)</span>
+              <button disabled={page >= totalPages} onClick={() => loadQuestions(page + 1)} style={btn('#f1f5f9', '#374151', { opacity: page >= totalPages ? 0.4 : 1 })}>Next →</button>
+            </div>
+          )}
+          {!loading && <div style={{ textAlign: 'right', fontSize: '0.75rem', color: '#94a3b8', marginTop: '8px' }}>{total} question{total !== 1 ? 's' : ''} found</div>}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/* VIEW: CREATE / EDIT ─────────────────────────────────────────────────  */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {(view === 'create' || view === 'edit') && (
+        <div style={{ background: '#fff', borderRadius: '16px', padding: '28px', border: '1px solid #f0f4f8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+          <h3 style={{ margin: '0 0 20px', fontSize: '1.05rem', fontWeight: 800, color: '#0f2144' }}>
+            {view === 'edit' ? '✏️ Edit Question' : '+ Create New Question'}
+          </h3>
+          <form onSubmit={handleSave}>
+            {/* Row 1: Exam, Subject, Topic, SubTopic */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+              <div>
+                <label style={lbl}>Examination Type</label>
+                <select value={form.examType} onChange={e => setForm(f => ({ ...f, examType: e.target.value }))} style={inp}>
+                  {EXAM_TYPES.map(v => <option key={v}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Subject</label>
+                <select value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} style={inp}>
+                  {SUBJECTS.map(v => <option key={v}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Topic <span style={{ color: '#ef4444' }}>*</span></label>
+                <input required value={form.topic} onChange={e => setForm(f => ({ ...f, topic: e.target.value }))} placeholder="e.g. Algebra, Mechanics" style={inp} />
+              </div>
+              <div>
+                <label style={lbl}>Sub-Topic</label>
+                <input value={form.subTopic} onChange={e => setForm(f => ({ ...f, subTopic: e.target.value }))} placeholder="e.g. Quadratic Equations" style={inp} />
+              </div>
+            </div>
+
+            {/* Row 2: Class, Year, Difficulty, Type */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+              <div>
+                <label style={lbl}>Target Class</label>
+                <select value={form.targetClass} onChange={e => setForm(f => ({ ...f, targetClass: e.target.value }))} style={inp}>
+                  {['JSS 1', 'JSS 2', 'JSS 3', 'SSS 1', 'SSS 2', 'SSS 3', 'JAMB UTME', 'WAEC Candidate', 'GENERAL'].map(v => <option key={v}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Year (optional)</label>
+                <input type="number" min="1970" max={new Date().getFullYear()} value={form.year} onChange={e => setForm(f => ({ ...f, year: e.target.value }))} placeholder="e.g. 2023" style={inp} />
+              </div>
+              <div>
+                <label style={lbl}>Difficulty</label>
+                <select value={form.difficulty} onChange={e => setForm(f => ({ ...f, difficulty: e.target.value }))} style={inp}>
+                  {DIFFICULTIES.map(v => <option key={v}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Origin</label>
+                <select value={form.origin} onChange={e => setForm(f => ({ ...f, origin: e.target.value }))} style={inp}>
+                  {ORIGINS.map(v => <option key={v}>{v.replace('_', ' ')}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Question Text */}
+            <div style={{ marginBottom: '12px' }}>
+              <label style={lbl}>Question Text <span style={{ color: '#ef4444' }}>*</span></label>
+              <textarea required value={form.questionText} onChange={e => setForm(f => ({ ...f, questionText: e.target.value }))}
+                rows={4} placeholder="Enter the full question text here... You can include mathematical notation." style={{ ...inp, resize: 'vertical' }} />
+            </div>
+
+            {/* Options */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+              {['A', 'B', 'C', 'D'].map(opt => (
+                <div key={opt}>
+                  <label style={lbl}>Option {opt} <span style={{ color: '#ef4444' }}>*</span></label>
+                  <input required value={form[`option${opt}`]} onChange={e => setForm(f => ({ ...f, [`option${opt}`]: e.target.value }))}
+                    placeholder={`Option ${opt} text`} style={{ ...inp, borderColor: form.correctOption === opt ? '#16a34a' : '#e2e8f0', boxShadow: form.correctOption === opt ? '0 0 0 2px #bbf7d0' : 'none' }} />
+                </div>
+              ))}
+            </div>
+
+            {/* Correct Answer + Status */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+              <div>
+                <label style={lbl}>Correct Answer <span style={{ color: '#ef4444' }}>*</span></label>
+                <select required value={form.correctOption} onChange={e => setForm(f => ({ ...f, correctOption: e.target.value }))} style={{ ...inp, borderColor: '#16a34a', color: '#16a34a', fontWeight: 700 }}>
+                  {['A', 'B', 'C', 'D'].map(v => <option key={v}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Review Status</label>
+                <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} style={inp}>
+                  {STATUSES.map(v => <option key={v}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Published</label>
+                <select value={form.isPublished ? 'YES' : 'NO'} onChange={e => setForm(f => ({ ...f, isPublished: e.target.value === 'YES' }))} style={inp}>
+                  <option value="YES">Yes – Visible to students</option>
+                  <option value="NO">No – Hidden draft</option>
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Source Name</label>
+                <input value={form.sourceName} onChange={e => setForm(f => ({ ...f, sourceName: e.target.value }))} placeholder="e.g. WAEC SSCE 2022" style={inp} />
+              </div>
+            </div>
+
+            {/* Explanation */}
+            <div style={{ marginBottom: '20px' }}>
+              <label style={lbl}>Explanation / Worked Solution</label>
+              <textarea value={form.explanation} onChange={e => setForm(f => ({ ...f, explanation: e.target.value }))}
+                rows={3} placeholder="Provide a step-by-step solution to help students understand the answer." style={{ ...inp, resize: 'vertical' }} />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button type="submit" disabled={saving} style={btn('#0f2144', '#d4a853', { padding: '11px 28px', fontSize: '0.9rem', opacity: saving ? 0.7 : 1 })}>
+                {saving ? 'Saving...' : view === 'edit' ? 'Save Changes' : 'Create Question'}
+              </button>
+              <button type="button" onClick={() => { setView('list'); setEditingId(null); setForm(EMPTY_FORM); }} style={btn('#f1f5f9', '#374151', { padding: '11px 20px' })}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/* VIEW: BULK IMPORT ───────────────────────────────────────────────────  */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {view === 'import' && (
+        <div style={{ background: '#fff', borderRadius: '16px', padding: '28px', border: '1px solid #f0f4f8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f2144' }}>📥 Bulk Question Import</h3>
+            <button onClick={downloadTemplate} style={btn('#f0f9ff', '#0284c7', { border: '1px solid #bae6fd' })}>
+              ⬇ Download CSV Template
+            </button>
+          </div>
+
+          {/* Format Info */}
+          <div style={{ background: '#fafafa', borderRadius: '12px', padding: '14px 18px', marginBottom: '20px', border: '1px solid #f0f4f8', fontSize: '0.82rem', color: '#475569' }}>
+            <strong style={{ color: '#0f2144' }}>Supported Formats:</strong>
+            <ul style={{ margin: '8px 0 0', paddingLeft: '18px', lineHeight: 1.8 }}>
+              <li><b>CSV</b>: Headers — Examination, Subject, Topic, Question Text, Option A, Option B, Option C, Option D, Correct Answer, Explanation, Difficulty, Examination Year, Question Origin, Source Name</li>
+              <li><b>JSON</b>: Array of objects with keys: examType, subject, topic, questionText, options (array), correctOption, explanation, difficulty, year, origin, sourceName</li>
+            </ul>
+            <div style={{ marginTop: '8px', color: '#d97706', fontWeight: 600 }}>All imported questions are saved as <em>Pending Review</em> and must be approved before they appear on student exams.</div>
+          </div>
+
+          <form onSubmit={handleImport}>
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', alignItems: 'center' }}>
+              <div>
+                <label style={lbl}>File Format</label>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {['CSV', 'JSON'].map(t => (
+                    <button key={t} type="button" onClick={() => setImportType(t)}
+                      style={btn(importType === t ? '#0f2144' : '#f1f5f9', importType === t ? '#d4a853' : '#374151', { padding: '7px 20px' })}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={lbl}>Paste {importType} Content Here <span style={{ color: '#ef4444' }}>*</span></label>
+              <textarea value={importText} onChange={e => setImportText(e.target.value)}
+                rows={12} placeholder={importType === 'CSV'
+                  ? 'Examination,Subject,Topic,Question Text,Option A,Option B,Option C,Option D,Correct Answer,Explanation,Difficulty,Examination Year,Question Origin,Source Name\nJAMB,Mathematics,Algebra,...'
+                  : '[{"examType":"JAMB","subject":"Mathematics","topic":"Algebra","questionText":"...","options":[{"id":"A","text":"..."}],"correctOption":"A"}]'}
+                style={{ ...inp, resize: 'vertical', fontFamily: 'monospace', fontSize: '0.82rem' }} />
+            </div>
+
+            <button type="submit" disabled={importLoading} style={btn('#0f2144', '#d4a853', { padding: '11px 28px', fontSize: '0.9rem', opacity: importLoading ? 0.7 : 1 })}>
+              {importLoading ? '⏳ Importing...' : '📥 Import Questions'}
+            </button>
+          </form>
+
+          {/* Import Result */}
+          {importResult && (
+            <div style={{ marginTop: '20px', background: '#f0fdf4', borderRadius: '12px', padding: '18px 20px', border: '1px solid #bbf7d0' }}>
+              <div style={{ fontWeight: 800, color: '#16a34a', marginBottom: '12px', fontSize: '0.95rem' }}>Import Complete</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px', marginBottom: '12px' }}>
+                {[
+                  { label: 'Total Processed', value: importResult.totalProcessed, color: '#0f2144' },
+                  { label: 'Accepted', value: importResult.acceptedCount, color: '#16a34a' },
+                  { label: 'Duplicates', value: importResult.duplicateCount, color: '#d97706' },
+                  { label: 'Invalid', value: importResult.failedCount, color: '#dc2626' },
+                ].map(s => (
+                  <div key={s.label} style={{ background: '#fff', borderRadius: '10px', padding: '12px', border: '1px solid #e7f9ee' }}>
+                    <div style={{ fontSize: '1.4rem', fontWeight: 900, color: s.color }}>{s.value}</div>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 600 }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+              {importResult.errors && importResult.errors.length > 0 && (
+                <details style={{ marginTop: '8px' }}>
+                  <summary style={{ cursor: 'pointer', fontWeight: 700, color: '#dc2626', fontSize: '0.85rem' }}>
+                    View {importResult.errors.length} error{importResult.errors.length > 1 ? 's' : ''} / skipped rows
+                  </summary>
+                  <div style={{ marginTop: '10px', maxHeight: '200px', overflowY: 'auto', fontSize: '0.78rem' }}>
+                    {importResult.errors.map((err, i) => (
+                      <div key={i} style={{ background: '#fef2f2', borderRadius: '7px', padding: '8px 12px', marginBottom: '5px', color: err.isDuplicate ? '#d97706' : '#dc2626', fontFamily: 'monospace' }}>
+                        <b>Row {err.row}:</b> {err.error}
+                        {err.questionSnippet && <div style={{ color: '#94a3b8', marginTop: '2px' }}>"{err.questionSnippet}..."</div>}
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/* VIEW: AI GENERATE ───────────────────────────────────────────────────  */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {view === 'ai' && (
+        <div style={{ background: '#fff', borderRadius: '16px', padding: '28px', border: '1px solid #f0f4f8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+          <h3 style={{ margin: '0 0 6px', fontSize: '1.05rem', fontWeight: 800, color: '#0f2144' }}>🤖 AI Question Generator</h3>
+          <p style={{ margin: '0 0 20px', fontSize: '0.83rem', color: '#64748b' }}>
+            Generates curriculum-aligned JAMB/WAEC/NECO questions using AI or the built-in Nigerian syllabus knowledge bank.
+            All generated questions are saved as <b>Pending Review</b> — you must approve before they appear on student exams.
+          </p>
+
+          <form onSubmit={handleAiGenerate}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+              <div>
+                <label style={lbl}>Examination</label>
+                <select value={aiForm.examType} onChange={e => setAiForm(f => ({ ...f, examType: e.target.value }))} style={inp}>
+                  {EXAM_TYPES.map(v => <option key={v}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Subject</label>
+                <select value={aiForm.subject} onChange={e => setAiForm(f => ({ ...f, subject: e.target.value }))} style={inp}>
+                  {SUBJECTS.map(v => <option key={v}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Topic</label>
+                <input value={aiForm.topic} onChange={e => setAiForm(f => ({ ...f, topic: e.target.value }))} placeholder="e.g. Algebra, Photosynthesis" style={inp} />
+              </div>
+              <div>
+                <label style={lbl}>Difficulty</label>
+                <select value={aiForm.difficulty} onChange={e => setAiForm(f => ({ ...f, difficulty: e.target.value }))} style={inp}>
+                  {DIFFICULTIES.map(v => <option key={v}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={lbl}>Number to Generate (1–10)</label>
+                <input type="number" min={1} max={10} value={aiForm.count} onChange={e => setAiForm(f => ({ ...f, count: parseInt(e.target.value) || 3 }))} style={inp} />
+              </div>
+            </div>
+
+            <button type="submit" disabled={aiLoading} style={btn('#6366f1', '#fff', { padding: '11px 28px', fontSize: '0.9rem', opacity: aiLoading ? 0.7 : 1 })}>
+              {aiLoading ? '⏳ Generating...' : '🤖 Generate Questions'}
+            </button>
+          </form>
+
+          {/* AI Results Preview */}
+          {aiResult && (
+            <div style={{ marginTop: '24px' }}>
+              <div style={{ fontWeight: 800, color: '#6366f1', marginBottom: '14px', fontSize: '0.95rem' }}>
+                {aiResult.length} Question{aiResult.length !== 1 ? 's' : ''} Generated & Saved as Pending Review
+              </div>
+              {aiResult.map((q, i) => (
+                <div key={q.id || i} style={{ background: '#fafafa', borderRadius: '12px', padding: '16px 18px', marginBottom: '12px', border: '1px solid #f0f4f8' }}>
+                  <div style={{ fontWeight: 700, color: '#0f2144', marginBottom: '8px', fontSize: '0.9rem' }}>
+                    Q{i + 1}. {q.questionText}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px', marginBottom: '8px' }}>
+                    {(Array.isArray(q.options) ? q.options : []).map(opt => (
+                      <div key={opt.id} style={{ fontSize: '0.83rem', color: opt.id === q.correctOption ? '#16a34a' : '#475569', fontWeight: opt.id === q.correctOption ? 700 : 400 }}>
+                        {opt.id === q.correctOption ? '✓ ' : ''}{opt.id}. {opt.text}
+                      </div>
+                    ))}
+                  </div>
+                  {q.explanation && (
+                    <div style={{ fontSize: '0.78rem', color: '#64748b', background: '#f0fdf4', padding: '8px 12px', borderRadius: '8px', borderLeft: '3px solid #16a34a' }}>
+                      <b>Explanation:</b> {q.explanation}
+                    </div>
+                  )}
+                </div>
+              ))}
+              <button onClick={() => { setView('list'); loadQuestions(1); }} style={btn('#0f2144', '#d4a853', { marginTop: '8px' })}>
+                → View All Questions
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/* VIEW: IMPORT HISTORY ────────────────────────────────────────────────  */}
+      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {view === 'history' && (
+        <div style={{ background: '#fff', borderRadius: '16px', padding: '28px', border: '1px solid #f0f4f8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+          <h3 style={{ margin: '0 0 20px', fontSize: '1.05rem', fontWeight: 800, color: '#0f2144' }}>📜 Import Audit Log</h3>
+          {historyLoading ? (
+            <p style={{ color: '#9ca3af', textAlign: 'center', padding: '40px' }}>Loading import history...</p>
+          ) : importHistory.length === 0 ? (
+            <p style={{ color: '#9ca3af', textAlign: 'center', padding: '40px' }}>No import records found.</p>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #f1f5f9' }}>
+                    {['File', 'Format', 'Total', 'Accepted', 'Duplicates', 'Failed', 'Status', 'Imported By', 'Date'].map(h => (
+                      <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {importHistory.map(log => (
+                    <tr key={log.id} style={{ borderBottom: '1px solid #f8fafc' }}>
+                      <td style={{ padding: '8px 10px', fontWeight: 600, color: '#0f2144', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{log.fileName}</td>
+                      <td style={{ padding: '8px 10px' }}><span style={{ background: '#f1f5f9', color: '#374151', padding: '2px 7px', borderRadius: '5px', fontWeight: 700, fontSize: '0.72rem' }}>{log.fileType}</span></td>
+                      <td style={{ padding: '8px 10px', color: '#374151', fontWeight: 700 }}>{log.totalRows}</td>
+                      <td style={{ padding: '8px 10px', color: '#16a34a', fontWeight: 700 }}>{log.acceptedCount}</td>
+                      <td style={{ padding: '8px 10px', color: '#d97706', fontWeight: 700 }}>{log.duplicateCount}</td>
+                      <td style={{ padding: '8px 10px', color: '#dc2626', fontWeight: 700 }}>{log.failedCount}</td>
+                      <td style={{ padding: '8px 10px' }}>
+                        <span style={{ background: log.status === 'COMPLETED' ? '#f0fdf4' : '#fef2f2', color: log.status === 'COMPLETED' ? '#16a34a' : '#dc2626', padding: '2px 7px', borderRadius: '5px', fontWeight: 700, fontSize: '0.72rem' }}>{log.status}</span>
+                      </td>
+                      <td style={{ padding: '8px 10px', color: '#6b7280' }}>{log.importedBy || '—'}</td>
+                      <td style={{ padding: '8px 10px', color: '#94a3b8', whiteSpace: 'nowrap', fontSize: '0.75rem' }}>{new Date(log.createdAt).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>
