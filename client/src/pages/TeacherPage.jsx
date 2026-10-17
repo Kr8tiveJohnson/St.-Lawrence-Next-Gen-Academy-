@@ -173,7 +173,7 @@ export default function TeacherPage() {
             {sidebarOpen && (
               <div style={{ overflow: "hidden" }}>
                 <div style={{ color: "var(--navy, #101c44)", fontWeight: 900, fontSize: "0.95rem", lineHeight: 1.15, fontFamily: "var(--font-h, 'Outfit', sans-serif)" }}>
-                  ia Academy
+                  ST. LAWRENCE
                 </div>
                 <div style={{ color: "var(--gold, #dfa921)", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>
                   Teacher Portal

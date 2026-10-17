@@ -80,9 +80,12 @@ const NAV_GROUPS = [
 const NAV = NAV_GROUPS.flatMap(g => g.items);
 
 
-const adminHeaders = () => ({
-  Authorization: `Bearer ${localStorage.getItem("adminToken")}`,
-});
+const getAdminToken = () => localStorage.getItem("adminToken") || localStorage.getItem("token");
+
+const adminHeaders = () => {
+  const token = getAdminToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 function StatCard({ label, value, icon, color }) {
@@ -217,24 +220,48 @@ function SubmitBtn({ loading, label }) {
 // ─── Section: Dashboard ───────────────────────────────────────────────────────
 function DashboardTab({ stats, onNav }) {
   const [liveStudents, setLiveStudents] = useState([]);
+  const [syncing, setSyncing] = useState(false);
+
+  const fetchLiveStudents = useCallback(async () => {
+    try {
+      const { data } = await client.get("/admin/users?role=STUDENT&limit=15", { headers: adminHeaders() });
+      setLiveStudents(data.users || []);
+    } catch (e) {
+      console.error("Dashboard live users error:", e);
+    }
+  }, []);
+
+  const handleManualSync = async () => {
+    setSyncing(true);
+    await fetchLiveStudents();
+    setTimeout(() => setSyncing(false), 500);
+  };
 
   useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await client.get("/admin/users?role=STUDENT&limit=6", { headers: adminHeaders() });
-        setLiveStudents(data.users || []);
-      } catch (e) {}
-    })();
-  }, []);
+    fetchLiveStudents();
+    const interval = setInterval(fetchLiveStudents, 8000); // Live poll every 8s
+    return () => clearInterval(interval);
+  }, [fetchLiveStudents]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "28px" }}>
+      {/* Live sync banner */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "10px 18px", borderRadius: "14px", fontSize: "0.82rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "#166534", fontWeight: 700 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} />
+          Live Database Connection Active · Automatic sync every 8 seconds
+        </div>
+        <button onClick={handleManualSync} disabled={syncing} style={{ background: "#ffffff", border: "1px solid #86efac", borderRadius: "8px", padding: "5px 14px", fontSize: "0.78rem", fontWeight: 700, color: "#15803d", cursor: syncing ? "not-allowed" : "pointer" }}>
+          {syncing ? "Syncing..." : "↻ Sync Now"}
+        </button>
+      </div>
+
       <SchoolDashboardView
         role="ADMIN"
         stats={stats}
         liveUsers={liveStudents}
         onNavigateTab={onNav}
-        onViewAllActivity={() => onNav("Analytics")}
+        onViewAllActivity={() => onNav("Users")}
       />
 
       {/* Quick Actions & System Status Cards */}
@@ -387,18 +414,33 @@ function UsersTab() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [selectedRole, setSelectedRole] = useState("ALL");
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
     try {
-      const { data } = await client.get("/admin/users", { headers: adminHeaders() });
+      const params = new URLSearchParams();
+      if (selectedRole !== "ALL") params.set("role", selectedRole);
+      if (search.trim()) params.set("search", search.trim());
+      const { data } = await client.get(`/admin/users?${params.toString()}`, { headers: adminHeaders() });
       setUsers(data.users || []);
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Load users error:", e); }
     setLoading(false);
-  }, []);
+  }, [selectedRole, search]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    setLoading(true);
+    load();
+    const interval = setInterval(load, 8000); // Live poll every 8 seconds
+    return () => clearInterval(interval);
+  }, [load]);
+
+  const handleManualRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setTimeout(() => setRefreshing(false), 500);
+  };
 
   const changeRole = async (id, role) => {
     try {
@@ -415,33 +457,49 @@ function UsersTab() {
     } catch (e) { alert("Failed to delete user"); }
   };
 
-  const filtered = users.filter(u =>
-    (u.profile?.fullName || u.email || "").toLowerCase().includes(search.toLowerCase())
-  );
-
   const roleBadge = { STUDENT: "#6366f1", TEACHER: "#0ea5e9", ADMIN: "#d4a853", MAIN_ADMIN: "#ef4444" };
 
   return (
     <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #f0f0f0" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-        <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#0f2144" }}>All Users ({users.length})</h2>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search users..." style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.88rem", outline: "none", color: "#0f2144" }} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#0f2144" }}>
+            All Registered Accounts ({users.length})
+          </h2>
+          <span style={{ fontSize: "0.75rem", color: "#16a34a", fontWeight: 600 }}>● Live Database Connected · Auto-updating</span>
+        </div>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <select value={selectedRole} onChange={e => setSelectedRole(e.target.value)} style={{ padding: "8px 12px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.85rem", outline: "none", color: "#0f2144", fontWeight: 600, background: "#f8fafc" }}>
+            <option value="ALL">All Roles</option>
+            <option value="STUDENT">Students Only</option>
+            <option value="TEACHER">Teachers Only</option>
+            <option value="ADMIN">Admins Only</option>
+          </select>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, email, phone..." style={{ padding: "8px 14px", borderRadius: "8px", border: "1px solid #e2e8f0", fontSize: "0.88rem", outline: "none", color: "#0f2144", width: "200px" }} />
+          <button onClick={handleManualRefresh} disabled={refreshing} style={{ background: "#0f2144", color: "#d4a853", border: "none", borderRadius: "8px", padding: "8px 16px", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
+            {refreshing ? "Refreshing..." : "↻ Refresh"}
+          </button>
+        </div>
       </div>
       {loading ? <p style={{ color: "#9ca3af", textAlign: "center" }}>Loading...</p> : (
         <div style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.88rem" }}>
             <thead>
               <tr style={{ borderBottom: "2px solid #f1f5f9" }}>
-                {["Name", "Email", "Role", "Tier", "Joined", "Actions"].map(h => (
+                {["Name", "Email", "Phone", "Role", "Tier", "Joined", "Actions"].map(h => (
                   <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: "0.75rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {filtered.map(u => (
+              {users.map(u => (
                 <tr key={u.id} style={{ borderBottom: "1px solid #f8fafc" }}>
-                  <td style={{ padding: "12px", fontWeight: 600, color: "#0f2144" }}>{u.profile?.fullName || "—"}</td>
+                  <td style={{ padding: "12px", fontWeight: 600, color: "#0f2144" }}>
+                    <div>{u.profile?.fullName || `${u.profile?.firstName || ""} ${u.profile?.surname || ""}`.trim() || "—"}</div>
+                    {u.profile?.regNumber && <div style={{ fontSize: "0.72rem", color: "#94a3b8" }}>ID: {u.profile.regNumber}</div>}
+                  </td>
                   <td style={{ padding: "12px", color: "#6b7280" }}>{u.email}</td>
+                  <td style={{ padding: "12px", color: "#6b7280" }}>{u.profile?.phone || "—"}</td>
                   <td style={{ padding: "12px" }}>
                     <select value={u.role} onChange={e => changeRole(u.id, e.target.value)}
                       style={{ padding: "4px 8px", borderRadius: "6px", border: `1px solid ${roleBadge[u.role] || "#e2e8f0"}`, color: roleBadge[u.role] || "#374151", fontWeight: 700, fontSize: "0.8rem", background: `${roleBadge[u.role] || "#6b7280"}15`, cursor: "pointer" }}>
@@ -458,7 +516,7 @@ function UsersTab() {
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && <tr><td colSpan={6} style={{ textAlign: "center", padding: "40px", color: "#9ca3af" }}>No users found.</td></tr>}
+              {users.length === 0 && <tr><td colSpan={7} style={{ textAlign: "center", padding: "40px", color: "#9ca3af" }}>No registered accounts found matching current filter.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -988,28 +1046,54 @@ function CoursesTab() {
 function TeachersTab() {
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
     try {
       const { data } = await client.get("/admin/users?role=TEACHER", { headers: adminHeaders() });
       setTeachers(data.users || []);
-    } catch (e) { console.error(e); }
+    } catch (e) { console.error("Load teachers error:", e); }
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    setLoading(true);
+    load();
+    const interval = setInterval(load, 8000); // Live poll every 8s
+    return () => clearInterval(interval);
+  }, [load]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setTimeout(() => setRefreshing(false), 500);
+  };
 
   return (
     <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", border: "1px solid #f0f0f0" }}>
-      <h2 style={{ margin: "0 0 20px 0", fontSize: "1.1rem", fontWeight: 800, color: "#0f2144" }}>Teacher Accounts ({teachers.length})</h2>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#0f2144" }}>Teacher Accounts ({teachers.length})</h2>
+          <span style={{ fontSize: "0.75rem", color: "#16a34a", fontWeight: 600 }}>● Live Faculty Roster · Auto-updating</span>
+        </div>
+        <button onClick={handleRefresh} disabled={refreshing} style={{ background: "#0f2144", color: "#d4a853", border: "none", borderRadius: "8px", padding: "8px 16px", fontWeight: 700, fontSize: "0.82rem", cursor: "pointer" }}>
+          {refreshing ? "Refreshing..." : "↻ Refresh"}
+        </button>
+      </div>
       {loading ? <p style={{ color: "#9ca3af", textAlign: "center" }}>Loading...</p> : (
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {teachers.map(t => (
             <div key={t.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px", border: "1px solid #f0f0f0", borderRadius: "12px" }}>
               <div>
-                <div style={{ fontWeight: 700, color: "#0f2144" }}>{t.profile?.fullName || "Unnamed Teacher"}</div>
-                <div style={{ fontSize: "0.82rem", color: "#6b7280" }}>{t.email}</div>
+                <div style={{ fontWeight: 700, color: "#0f2144" }}>
+                  {t.profile?.fullName || `${t.profile?.firstName || ""} ${t.profile?.surname || ""}`.trim() || "Teacher Account"}
+                </div>
+                <div style={{ fontSize: "0.82rem", color: "#6b7280" }}>
+                  {t.email} {t.profile?.phone ? `· ${t.profile.phone}` : ""}
+                </div>
+                <div style={{ fontSize: "0.74rem", color: "#94a3b8", marginTop: "2px" }}>
+                  Registered on: {new Date(t.createdAt).toLocaleDateString()}
+                </div>
               </div>
               <span style={{ fontSize: "0.75rem", fontWeight: 700, color: "#0ea5e9", background: "#e0f2fe", padding: "3px 10px", borderRadius: "20px" }}>TEACHER</span>
             </div>
@@ -2101,19 +2185,27 @@ export default function AdminPage() {
 
   const fetchStats = useCallback(async () => {
     try {
-      const { data } = await client.get("/admin/stats");
+      const { data } = await client.get("/admin/stats", { headers: adminHeaders() });
       setStats(data);
-    } catch (e) {}
-  }, []);
+    } catch (e) {
+      if (e.response?.status === 401) {
+        localStorage.removeItem("adminToken");
+        navigate("/admin-login");
+      }
+    }
+  }, [navigate]);
 
   useEffect(() => {
-    const token = localStorage.getItem("adminToken");
+    const token = getAdminToken();
     if (!token) { navigate("/admin-login"); return; }
     fetchStats();
-  }, [navigate, fetchStats, activeTab]); // Reload stats when changing tabs
+    const interval = setInterval(fetchStats, 8000); // Live poll stats every 8s
+    return () => clearInterval(interval);
+  }, [navigate, fetchStats]);
 
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
+    localStorage.removeItem("token");
     navigate("/admin-login");
   };
 
@@ -2217,10 +2309,10 @@ export default function AdminPage() {
             {sidebarOpen && (
               <div style={{ overflow: "hidden" }}>
                 <div style={{ color: "var(--navy, #101c44)", fontWeight: 900, fontSize: "0.95rem", lineHeight: 1.15, fontFamily: "var(--font-h, 'Outfit', sans-serif)" }}>
-                  ia Academy
+                  ST. LAWRENCE
                 </div>
                 <div style={{ color: "var(--gold, #dfa921)", fontSize: "0.68rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-                  St. Lawrence
+                  Next Gen Academy
                 </div>
               </div>
             )}

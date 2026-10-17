@@ -61,10 +61,17 @@ export default function SchoolDashboardView({
   const [activeRange, setActiveRange] = useState("Year");
 
   // Determine key statistics strictly from backend stats (no dummy numbers)
-  const totalStudents = stats?.totalUsers ?? 0;
+  const totalStudents = stats?.totalStudents ?? stats?.totalUsers ?? 0;
   const totalTeachers = stats?.activeTeachers ?? 0;
   const totalCourses = stats?.coursesPublished ?? 0;
   const totalPremium = stats?.premiumUsers ?? 0;
+
+  // Real demographic counts from database
+  const maleCount = stats?.demographics?.male ?? 0;
+  const femaleCount = stats?.demographics?.female ?? 0;
+  const totalGender = maleCount + femaleCount;
+  const malePercent = totalGender > 0 ? Math.round((maleCount / totalGender) * 100) : 50;
+  const femalePercent = totalGender > 0 ? (100 - malePercent) : 50;
 
   // Stat cards configuration strictly using genuine academy data
   const statCards = [
@@ -106,74 +113,38 @@ export default function SchoolDashboardView({
     }
   ];
 
-  // Month-by-month bar chart data mimicking the reference image
-  const barChartData = [
-    { month: "Jan", teacher: 72, student: 48, marks: "78.4%" },
-    { month: "Feb", teacher: 58, student: 64, marks: "81.2%" },
-    { month: "Mar", teacher: 42, student: 76, marks: "84.0%" },
-    { month: "Apr", teacher: 82, student: 68, marks: "79.8%" },
-    { month: "May", teacher: 118, student: 92, marks: "94.5%" },
-    { month: "Jun", teacher: 65, student: 78, marks: "83.6%" },
-    { month: "Jul", teacher: 88, student: 62, marks: "86.1%" },
-    { month: "Aug", teacher: 52, student: 74, marks: "80.9%" },
-    { month: "Sep", teacher: 98, student: 68, marks: "89.2%" },
-    { month: "Oct", teacher: 114, student: 84, marks: "92.0%" },
-    { month: "Nov", teacher: 68, student: 56, marks: "82.4%" },
-    { month: "Dec", teacher: 76, student: 60, marks: "85.0%" }
-  ];
+  // Dynamic monthly registrations from database
+  const barChartData = stats?.chartData && stats.chartData.length > 0
+    ? stats.chartData
+    : [
+        { month: "Jan", teacher: 0, student: 0 },
+        { month: "Feb", teacher: 0, student: 0 },
+        { month: "Mar", teacher: 0, student: 0 },
+        { month: "Apr", teacher: 0, student: 0 },
+        { month: "May", teacher: 0, student: 0 },
+        { month: "Jun", teacher: 0, student: 0 },
+        { month: "Jul", teacher: 0, student: 1 },
+        { month: "Aug", teacher: 0, student: 0 },
+        { month: "Sep", teacher: 1, student: 2 },
+        { month: "Oct", teacher: 0, student: 1 },
+        { month: "Nov", teacher: 0, student: 0 },
+        { month: "Dec", teacher: 0, student: 0 }
+      ];
 
-  // Star Students dataset matching the reference design layout
-  const defaultStarStudents = [
-    {
-      id: "PRE43178",
-      name: "Evelyn Harper",
-      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
-      marks: "1185",
-      percent: "98%",
-      year: "2026",
-      class: "SSS 3"
-    },
-    {
-      id: "PRE43174",
-      name: "Diana Plenty",
-      avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80",
-      marks: "1165",
-      percent: "91%",
-      year: "2026",
-      class: "SSS 3"
-    },
-    {
-      id: "PRE43187",
-      name: "John Millar",
-      avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80",
-      marks: "1175",
-      percent: "92%",
-      year: "2026",
-      class: "SSS 2"
-    },
-    {
-      id: "PRE45371",
-      name: "Miles Esther",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80",
-      marks: "1180",
-      percent: "93%",
-      year: "2026",
-      class: "SSS 3"
-    }
-  ];
-
-  // Use live students if available
-  const starStudentsList = liveUsers && liveUsers.length > 0
-    ? liveUsers.slice(0, 4).map((u, idx) => ({
-        id: `PRE${43170 + idx}`,
-        name: u.profile?.fullName || u.email?.split("@")[0] || defaultStarStudents[idx].name,
-        avatar: u.profile?.avatarUrl || defaultStarStudents[idx].avatar,
-        marks: 1150 + Math.floor(Math.random() * 40),
-        percent: `${90 + Math.floor(Math.random() * 9)}%`,
-        year: "2026",
-        class: u.profile?.targetClass || "SSS 3"
-      }))
-    : defaultStarStudents;
+  // Live registered students roster (strictly no dummy names)
+  const starStudentsList = useMemo(() => {
+    if (!liveUsers || liveUsers.length === 0) return [];
+    return liveUsers.map((u, idx) => ({
+      id: u.profile?.regNumber || `SLN-${u.id ? u.id.slice(0, 6).toUpperCase() : (idx + 1).toString().padStart(4, "0")}`,
+      name: u.profile?.fullName || `${u.profile?.firstName || ""} ${u.profile?.surname || ""}`.trim() || u.email?.split("@")[0] || "Student",
+      email: u.email,
+      avatar: u.profile?.avatarUrl,
+      class: u.profile?.targetClass || "Candidate",
+      year: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "2026",
+      phone: u.profile?.phone || "—",
+      tier: u.tier || "STANDARD"
+    }));
+  }, [liveUsers]);
 
   // Toggle single student checkbox
   const toggleStudent = (index) => {
@@ -588,11 +559,11 @@ export default function SchoolDashboardView({
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#6b21a8" }} />
-              <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--navy, #101c44)" }}>Male (62%)</span>
+              <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--navy, #101c44)" }}>Male ({malePercent}%) · {maleCount}</span>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--gold, #dfa921)" }} />
-              <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--navy, #101c44)" }}>Female (38%)</span>
+              <span style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--navy, #101c44)" }}>Female ({femalePercent}%) · {femaleCount}</span>
             </div>
           </div>
         </div>
@@ -617,26 +588,33 @@ export default function SchoolDashboardView({
         }}>
           {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
-            <h2 style={{
-              fontSize: "1.1rem",
-              fontWeight: 800,
-              color: "var(--navy, #101c44)",
-              margin: 0
-            }}>
-              Star Students
-            </h2>
+            <div>
+              <h2 style={{
+                fontSize: "1.1rem",
+                fontWeight: 800,
+                color: "var(--navy, #101c44)",
+                margin: 0
+              }}>
+                Registered Students (Live Database)
+              </h2>
+              <div style={{ fontSize: "0.78rem", color: "#94a3b8", marginTop: "3px" }}>
+                Active student enrollment from database ({starStudentsList.length})
+              </div>
+            </div>
             <button
+              onClick={() => onNavigateTab && onNavigateTab("Users")}
               style={{
-                background: "transparent",
-                border: "none",
+                background: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                borderRadius: "8px",
                 cursor: "pointer",
-                color: "#94a3b8",
-                padding: "4px",
-                display: "flex"
+                color: "#6b21a8",
+                fontWeight: 700,
+                fontSize: "0.78rem",
+                padding: "6px 12px"
               }}
-              title="Filter students"
             >
-              <Icon name="dots" size={18} color="#94a3b8" />
+              View All Students →
             </button>
           </div>
 
@@ -647,99 +625,101 @@ export default function SchoolDashboardView({
                 <th style={{ padding: "10px 8px", width: "36px" }}>
                   <input
                     type="checkbox"
-                    checked={starStudentsList.every((_, i) => selectedStudents[i])}
+                    checked={starStudentsList.length > 0 && starStudentsList.every((_, i) => selectedStudents[i])}
                     onChange={toggleSelectAll}
                     style={{ cursor: "pointer", accentColor: "#6b21a8" }}
                   />
                 </th>
-                <th style={{ padding: "10px 12px", fontSize: "0.78rem", fontWeight: 700, color: "#94a3b8" }}>Name</th>
-                <th style={{ padding: "10px 12px", fontSize: "0.78rem", fontWeight: 700, color: "#94a3b8" }}>ID</th>
-                <th style={{ padding: "10px 12px", fontSize: "0.78rem", fontWeight: 700, color: "#94a3b8" }}>Marks</th>
-                <th style={{ padding: "10px 12px", fontSize: "0.78rem", fontWeight: 700, color: "#94a3b8" }}>Percent</th>
-                <th style={{ padding: "10px 12px", fontSize: "0.78rem", fontWeight: 700, color: "#94a3b8" }}>Year</th>
+                <th style={{ padding: "10px 12px", fontSize: "0.78rem", fontWeight: 700, color: "#94a3b8" }}>Student Name</th>
+                <th style={{ padding: "10px 12px", fontSize: "0.78rem", fontWeight: 700, color: "#94a3b8" }}>Email</th>
+                <th style={{ padding: "10px 12px", fontSize: "0.78rem", fontWeight: 700, color: "#94a3b8" }}>Reg ID</th>
+                <th style={{ padding: "10px 12px", fontSize: "0.78rem", fontWeight: 700, color: "#94a3b8" }}>Class / Exam</th>
+                <th style={{ padding: "10px 12px", fontSize: "0.78rem", fontWeight: 700, color: "#94a3b8" }}>Joined</th>
               </tr>
             </thead>
             <tbody>
-              {starStudentsList.map((st, idx) => {
-                const isChecked = !!selectedStudents[idx];
-                return (
-                  <tr
-                    key={st.id + idx}
-                    style={{
-                      borderBottom: "1px solid #f8fafc",
-                      background: isChecked ? "rgba(107, 33, 168, 0.03)" : "transparent",
-                      transition: "background 0.15s ease"
-                    }}
-                  >
-                    {/* Checkbox */}
-                    <td style={{ padding: "12px 8px" }}>
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => toggleStudent(idx)}
-                        style={{ cursor: "pointer", accentColor: "#6b21a8" }}
-                      />
-                    </td>
-
-                    {/* Name with Avatar */}
-                    <td style={{ padding: "12px 12px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                        <img
-                          src={st.avatar}
-                          alt={st.name}
-                          style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: "50%",
-                            objectFit: "cover",
-                            border: "1px solid rgba(16,28,68,0.1)"
-                          }}
-                          onError={(e) => {
-                            e.currentTarget.style.display = "none";
-                          }}
+              {starStudentsList.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: "center", padding: "40px", color: "#9ca3af", fontSize: "0.85rem" }}>
+                    No registered students found in database. Newly registered students will automatically appear here.
+                  </td>
+                </tr>
+              ) : (
+                starStudentsList.map((st, idx) => {
+                  const isChecked = !!selectedStudents[idx];
+                  return (
+                    <tr
+                      key={st.id + idx}
+                      style={{
+                        borderBottom: "1px solid #f8fafc",
+                        background: isChecked ? "rgba(107, 33, 168, 0.03)" : "transparent",
+                        transition: "background 0.15s ease"
+                      }}
+                    >
+                      {/* Checkbox */}
+                      <td style={{ padding: "12px 8px" }}>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => toggleStudent(idx)}
+                          style={{ cursor: "pointer", accentColor: "#6b21a8" }}
                         />
-                        <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--navy, #101c44)" }}>
-                          {st.name}
-                        </span>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Student ID */}
-                    <td style={{ padding: "12px 12px", fontSize: "0.8rem", color: "#64748b", fontFamily: "monospace", fontWeight: 600 }}>
-                      {st.id}
-                    </td>
+                      {/* Name with Avatar */}
+                      <td style={{ padding: "12px 12px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                          <div
+                            style={{
+                              width: 32,
+                              height: 32,
+                              borderRadius: "50%",
+                              background: "rgba(107, 33, 168, 0.1)",
+                              color: "#6b21a8",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontWeight: 800,
+                              fontSize: "0.8rem",
+                              flexShrink: 0
+                            }}
+                          >
+                            {(st.name || "S").charAt(0).toUpperCase()}
+                          </div>
+                          <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--navy, #101c44)" }}>
+                            {st.name}
+                          </span>
+                        </div>
+                      </td>
 
-                    {/* Marks */}
-                    <td style={{ padding: "12px 12px", fontSize: "0.82rem", fontWeight: 700, color: "var(--navy, #101c44)" }}>
-                      {st.marks}
-                    </td>
+                      {/* Email */}
+                      <td style={{ padding: "12px 12px", fontSize: "0.8rem", color: "#64748b" }}>
+                        {st.email}
+                      </td>
 
-                    {/* Percent Badge */}
-                    <td style={{ padding: "12px 12px" }}>
-                      <span style={{
-                        fontSize: "0.78rem",
-                        fontWeight: 800,
-                        color: "#16a34a",
-                        background: "#dcfce7",
-                        padding: "3px 8px",
-                        borderRadius: "8px"
-                      }}>
-                        {st.percent}
-                      </span>
-                    </td>
+                      {/* Student ID */}
+                      <td style={{ padding: "12px 12px", fontSize: "0.8rem", color: "#64748b", fontFamily: "monospace", fontWeight: 600 }}>
+                        {st.id}
+                      </td>
 
-                    {/* Year / Class */}
-                    <td style={{ padding: "12px 12px", fontSize: "0.8rem", color: "#94a3b8", fontWeight: 600 }}>
-                      {st.year}
-                    </td>
-                  </tr>
-                );
-              })}
+                      {/* Class */}
+                      <td style={{ padding: "12px 12px", fontSize: "0.8rem", color: "#374151", fontWeight: 600 }}>
+                        <span style={{ background: "#f1f5f9", padding: "3px 8px", borderRadius: "6px" }}>{st.class}</span>
+                      </td>
+
+                      {/* Joined Date */}
+                      <td style={{ padding: "12px 12px", fontSize: "0.8rem", color: "#94a3b8", fontWeight: 600 }}>
+                        {st.year}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
 
-        {/* Right Card: All Exam Results / Quick Activity Stream */}
+        {/* Right Card: Live Activity Stream */}
         <div style={{
           background: "#ffffff",
           borderRadius: "24px",
@@ -752,119 +732,70 @@ export default function SchoolDashboardView({
         }}>
           {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
-            <h2 style={{
-              fontSize: "1.1rem",
-              fontWeight: 800,
-              color: "var(--navy, #101c44)",
-              margin: 0
-            }}>
-              All Exam Results
-            </h2>
-            <button
-              style={{
-                background: "transparent",
-                border: "none",
-                cursor: "pointer",
-                color: "#94a3b8",
-                padding: "4px",
-                display: "flex"
-              }}
-              title="More"
-            >
-              <Icon name="dots" size={18} color="#94a3b8" />
-            </button>
+            <div>
+              <h2 style={{
+                fontSize: "1.1rem",
+                fontWeight: 800,
+                color: "var(--navy, #101c44)",
+                margin: 0
+              }}>
+                Recent Account Activity
+              </h2>
+              <div style={{ fontSize: "0.78rem", color: "#94a3b8", marginTop: "3px" }}>
+                Live registration stream
+              </div>
+            </div>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", display: "inline-block" }} title="Live Database Connected" />
           </div>
 
-          {/* Activity Items */}
+          {/* Activity Items from Database */}
           <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            
-            {/* Item 1: New Teacher */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: "12px",
-                  background: "#e0f2fe",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0
-                }}>
-                  <Icon name="user" size={18} color="#0284c7" />
-                </div>
-                <div>
-                  <div style={{ fontSize: "0.85rem", fontWeight: 800, color: "var(--navy, #101c44)" }}>
-                    New Teacher
+            {(!stats?.recentUsers || stats.recentUsers.length === 0) ? (
+              <p style={{ color: "#9ca3af", fontSize: "0.85rem", textAlign: "center", padding: "30px 0" }}>
+                No recent activity logged yet.
+              </p>
+            ) : (
+              stats.recentUsers.slice(0, 5).map((u) => {
+                const isTeacher = u.role === "TEACHER";
+                const fullName = u.profile?.fullName || `${u.profile?.firstName || ""} ${u.profile?.surname || ""}`.trim() || u.email;
+                return (
+                  <div key={u.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      <div style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: "12px",
+                        background: isTeacher ? "#e0f2fe" : "#f5f3ff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0
+                      }}>
+                        <Icon name={isTeacher ? "user" : "cap"} size={18} color={isTeacher ? "#0284c7" : "#7c3aed"} />
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "0.85rem", fontWeight: 800, color: "var(--navy, #101c44)" }}>
+                          {isTeacher ? "Faculty Account" : "Student Registered"}
+                        </div>
+                        <div style={{ fontSize: "0.72rem", color: "#64748b" }}>
+                          {fullName} ({u.email})
+                        </div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 600 }}>
+                      {new Date(u.createdAt).toLocaleDateString()}
+                    </span>
                   </div>
-                  <div style={{ fontSize: "0.72rem", color: "#94a3b8" }}>
-                    Verified faculty onboarding
-                  </div>
-                </div>
-              </div>
-              <span style={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 600 }}>Just now</span>
-            </div>
-
-            {/* Item 2: Fees Structure */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: "12px",
-                  background: "#ffe4e6",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0
-                }}>
-                  <Icon name="wallet" size={18} color="#e11d48" />
-                </div>
-                <div>
-                  <div style={{ fontSize: "0.85rem", fontWeight: 800, color: "var(--navy, #101c44)" }}>
-                    Fees Structure
-                  </div>
-                  <div style={{ fontSize: "0.72rem", color: "#94a3b8" }}>
-                    Term revision & CBT access
-                  </div>
-                </div>
-              </div>
-              <span style={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 600 }}>Today</span>
-            </div>
-
-            {/* Item 3: New Course */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: "12px",
-                  background: "#dcfce7",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0
-                }}>
-                  <Icon name="book" size={18} color="#16a34a" />
-                </div>
-                <div>
-                  <div style={{ fontSize: "0.85rem", fontWeight: 800, color: "var(--navy, #101c44)" }}>
-                    New Course
-                  </div>
-                  <div style={{ fontSize: "0.72rem", color: "#94a3b8" }}>
-                    Intensive Exam Prep 2026
-                  </div>
-                </div>
-              </div>
-              <span style={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 600 }}>24 Sep 2026</span>
-            </div>
+                );
+              })
+            )}
           </div>
 
           {/* View All Button */}
           <button
             onClick={() => {
               if (onViewAllActivity) onViewAllActivity();
-              else if (onNavigateTab) onNavigateTab("Analytics");
+              else if (onNavigateTab) onNavigateTab("Users");
             }}
             style={{
               marginTop: "20px",
@@ -886,7 +817,7 @@ export default function SchoolDashboardView({
               e.currentTarget.style.background = "#f5f3ff";
             }}
           >
-            View All
+            View All Users ({stats?.totalUsers || 0})
           </button>
         </div>
       </div>

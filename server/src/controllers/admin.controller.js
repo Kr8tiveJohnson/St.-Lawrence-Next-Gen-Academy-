@@ -5,13 +5,36 @@ const prisma = require('../config/database');
  */
 async function getDashboardStats(req, res) {
   try {
-    const [totalUsers, activeTeachers, courses, newsArticles, hallOfFameEntries, messages] = await Promise.all([
+    const [
+      totalUsers,
+      totalStudents,
+      activeTeachers,
+      courses,
+      newsArticles,
+      hallOfFameEntries,
+      messages,
+      maleCount,
+      femaleCount,
+      cbtQuestions,
+      cbtAttempts,
+      recentUsers
+    ] = await Promise.all([
       prisma.user.count(),
+      prisma.user.count({ where: { role: 'STUDENT' } }),
       prisma.user.count({ where: { role: 'TEACHER' } }),
       prisma.course.count(),
       prisma.news.count({ where: { tag: { not: 'hall-of-fame' } } }),
       prisma.news.count({ where: { tag: 'hall-of-fame' } }),
-      prisma.message.count()
+      prisma.message.count(),
+      prisma.profile.count({ where: { gender: { equals: 'Male', mode: 'insensitive' } } }).catch(() => 0),
+      prisma.profile.count({ where: { gender: { equals: 'Female', mode: 'insensitive' } } }).catch(() => 0),
+      prisma.cbtQuestion.count().catch(() => 0),
+      prisma.cbtAttempt.count().catch(() => 0),
+      prisma.user.findMany({
+        take: 10,
+        orderBy: { createdAt: 'desc' },
+        include: { profile: true }
+      })
     ]);
 
     const premiumUsers = await prisma.user.count({ where: { tier: 'PAID' } });
@@ -23,8 +46,30 @@ async function getDashboardStats(req, res) {
       }
     });
 
+    // Monthly registrations breakdown for dynamic bar chart
+    const monthlyRegistrations = await prisma.user.findMany({
+      select: { createdAt: true, role: true },
+      orderBy: { createdAt: 'asc' }
+    });
+
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthMap = {};
+    monthNames.forEach(m => { monthMap[m] = { month: m, student: 0, teacher: 0 }; });
+
+    monthlyRegistrations.forEach(u => {
+      const d = new Date(u.createdAt);
+      const m = monthNames[d.getMonth()];
+      if (monthMap[m]) {
+        if (u.role === 'TEACHER') monthMap[m].teacher += 1;
+        else monthMap[m].student += 1;
+      }
+    });
+
+    const chartData = monthNames.map(m => monthMap[m]);
+
     res.status(200).json({
       totalUsers,
+      totalStudents,
       activeTeachers,
       premiumUsers,
       totalRevenue: revenueSum._sum.amount || 0,
@@ -32,6 +77,15 @@ async function getDashboardStats(req, res) {
       newsArticles,
       hallOfFameEntries,
       totalMessages: messages,
+      cbtQuestions,
+      cbtAttempts,
+      demographics: {
+        male: maleCount,
+        female: femaleCount,
+        totalWithGender: maleCount + femaleCount
+      },
+      chartData,
+      recentUsers,
       timestamp: new Date()
     });
   } catch (error) {
@@ -45,11 +99,21 @@ async function getDashboardStats(req, res) {
  */
 async function getAllUsers(req, res) {
   try {
-    const { role, tier, limit = 50, offset = 0 } = req.query;
+    const { role, tier, search, limit = 100, offset = 0 } = req.query;
 
     const whereClause = {};
-    if (role) whereClause.role = role;
-    if (tier) whereClause.tier = tier;
+    if (role && role !== 'ALL') whereClause.role = role;
+    if (tier && tier !== 'ALL') whereClause.tier = tier;
+    if (search && search.trim()) {
+      const q = search.trim();
+      whereClause.OR = [
+        { email: { contains: q, mode: 'insensitive' } },
+        { profile: { fullName: { contains: q, mode: 'insensitive' } } },
+        { profile: { surname: { contains: q, mode: 'insensitive' } } },
+        { profile: { firstName: { contains: q, mode: 'insensitive' } } },
+        { profile: { phone: { contains: q, mode: 'insensitive' } } }
+      ];
+    }
 
     const users = await prisma.user.findMany({
       where: whereClause,

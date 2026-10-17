@@ -753,10 +753,10 @@ export default function StudentDashboardView({
                     color: "#101c44",
                     lineHeight: 1.15
                   }}>
-                    ART ACADEMY
+                    ST. LAWRENCE
                   </div>
                   <div style={{ fontSize: "0.65rem", fontWeight: 800, color: "#dfa921", letterSpacing: "0.06em" }}>
-                    ST. LAWRENCE
+                    NEXT GEN ACADEMY
                   </div>
                 </div>
               </div>
