@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 
 // ─── SVG Icons Helper ────────────────────────────────────────────────────────
 function Icon({ name, size = 18, color = "currentColor", stroke = 1.8 }) {
