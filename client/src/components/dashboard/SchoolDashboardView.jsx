@@ -117,19 +117,19 @@ export default function SchoolDashboardView({
   const barChartData = stats?.chartData && stats.chartData.length > 0
     ? stats.chartData
     : [
-        { month: "Jan", teacher: 0, student: 0 },
-        { month: "Feb", teacher: 0, student: 0 },
-        { month: "Mar", teacher: 0, student: 0 },
-        { month: "Apr", teacher: 0, student: 0 },
-        { month: "May", teacher: 0, student: 0 },
-        { month: "Jun", teacher: 0, student: 0 },
-        { month: "Jul", teacher: 0, student: 1 },
-        { month: "Aug", teacher: 0, student: 0 },
-        { month: "Sep", teacher: 1, student: 2 },
-        { month: "Oct", teacher: 0, student: 1 },
-        { month: "Nov", teacher: 0, student: 0 },
-        { month: "Dec", teacher: 0, student: 0 }
-      ];
+      { month: "Jan", teacher: 0, student: 0 },
+      { month: "Feb", teacher: 0, student: 0 },
+      { month: "Mar", teacher: 0, student: 0 },
+      { month: "Apr", teacher: 0, student: 0 },
+      { month: "May", teacher: 0, student: 0 },
+      { month: "Jun", teacher: 0, student: 0 },
+      { month: "Jul", teacher: 0, student: 1 },
+      { month: "Aug", teacher: 0, student: 0 },
+      { month: "Sep", teacher: 1, student: 2 },
+      { month: "Oct", teacher: 0, student: 1 },
+      { month: "Nov", teacher: 0, student: 0 },
+      { month: "Dec", teacher: 0, student: 0 }
+    ];
 
   // Live registered students roster (strictly no dummy names)
   const starStudentsList = useMemo(() => {
@@ -168,7 +168,7 @@ export default function SchoolDashboardView({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "28px", width: "100%", maxWidth: "1280px", margin: "0 auto" }}>
-      
+
       {/* ── 1. Page Header Title ─────────────────────────────────── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
@@ -272,7 +272,7 @@ export default function SchoolDashboardView({
         gap: "24px",
         alignItems: "stretch"
       }}>
-        
+
         {/* Left Card: All Exam Result (Dual Bar Chart) */}
         <div style={{
           background: "#ffffff",
@@ -576,7 +576,7 @@ export default function SchoolDashboardView({
         gap: "24px",
         alignItems: "stretch"
       }}>
-        
+
         {/* Left Card: Star Students Table */}
         <div style={{
           background: "#ffffff",
