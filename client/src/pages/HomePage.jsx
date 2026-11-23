@@ -389,8 +389,12 @@ export default function HomePage() {
   }, []);
 
   const getCbtUrl = () => {
-    const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
-    return `http://localhost:5174${token ? `#token=${encodeURIComponent(token)}` : ''}`;
+    const extUrl = import.meta.env.VITE_CBT_URL;
+    if (extUrl) {
+      const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
+      return `${extUrl}${token ? `#token=${encodeURIComponent(token)}` : ''}`;
+    }
+    return '/cbt';
   };
 
   return (

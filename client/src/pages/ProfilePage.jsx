@@ -7,8 +7,12 @@ import SchoolDashboardView from "../components/dashboard/SchoolDashboardView";
 import StudentDashboardView from "../components/dashboard/StudentDashboardView";
 
 function getCbtPortalUrl() {
-  const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
-  return `http://localhost:5174${token ? `#token=${encodeURIComponent(token)}` : ''}`;
+  const extUrl = import.meta.env.VITE_CBT_URL;
+  if (extUrl) {
+    const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
+    return `${extUrl}${token ? `#token=${encodeURIComponent(token)}` : ''}`;
+  }
+  return '/cbt';
 }
 
 function getInitials(name = "") {

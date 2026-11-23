@@ -4,8 +4,12 @@ import client from "../../api/client";
 import logoImg from "../../assets/St. Lawrence Next Gen Academy logo.png";
 
 function getCbtPortalUrl() {
-  const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
-  return `http://localhost:5174${token ? `#token=${encodeURIComponent(token)}` : ''}`;
+  const extUrl = import.meta.env.VITE_CBT_URL;
+  if (extUrl) {
+    const token = localStorage.getItem("token") || localStorage.getItem("adminToken");
+    return `${extUrl}${token ? `#token=${encodeURIComponent(token)}` : ''}`;
+  }
+  return '/cbt';
 }
 
 // ─── Crisp, Professional SVG Vector Line Icons (Feather / Lucide Style) ───────

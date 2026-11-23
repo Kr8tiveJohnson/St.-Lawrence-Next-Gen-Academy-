@@ -91,9 +91,54 @@ app.get('/', (req, res) => {
   });
 });
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'St. Lawrence Next Gen API is running' });
+const prisma = require('./config/database');
+
+// Health check with database connectivity probe
+app.get('/api/health', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({
+      status: 'ok',
+      database: 'connected',
+      message: 'St. Lawrence Next Gen API is running'
+    });
+  } catch (dbErr) {
+    res.status(200).json({
+      status: 'degraded',
+      database: 'disconnected',
+      error: dbErr.message || 'Database connection error',
+      code: dbErr.code,
+      message: 'API server is running, but database connection failed'
+    });
+  }
+});
+
+// Dedicated DB Diagnostic Endpoint
+app.get('/api/health/db', async (req, res) => {
+  try {
+    const [userCount, questionCount, newsCount] = await Promise.all([
+      prisma.user.count(),
+      prisma.cbtQuestion.count(),
+      prisma.news.count()
+    ]);
+    res.status(200).json({
+      status: 'ok',
+      database: 'connected',
+      metrics: {
+        users: userCount,
+        cbtQuestions: questionCount,
+        newsArticles: newsCount
+      }
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      database: 'disconnected',
+      message: err.message,
+      code: err.code,
+      meta: err.meta
+    });
+  }
 });
 
 // Error handling middleware
