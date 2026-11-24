@@ -1716,7 +1716,7 @@ function QuestionBankTab() {
             { id: 'list', label: '📋 All Questions' },
             { id: 'create', label: '+ Create Question' },
             { id: 'import', label: '📥 Bulk Import' },
-            { id: 'ai', label: '🤖 AI Generate' },
+            { id: 'ai', label: '⚡ Question Generator' },
             { id: 'history', label: '📜 Import History' },
           ].map(v => (
             <button key={v.id} onClick={() => { setView(v.id); if (v.id === 'list') { setEditingId(null); setForm(EMPTY_FORM); } }}
@@ -2053,9 +2053,9 @@ function QuestionBankTab() {
       {/* ══════════════════════════════════════════════════════════════════════ */}
       {view === 'ai' && (
         <div style={{ background: '#fff', borderRadius: '16px', padding: '28px', border: '1px solid #f0f4f8', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-          <h3 style={{ margin: '0 0 6px', fontSize: '1.05rem', fontWeight: 800, color: '#0f2144' }}>🤖 AI Question Generator</h3>
+          <h3 style={{ margin: '0 0 6px', fontSize: '1.05rem', fontWeight: 800, color: '#0f2144' }}>⚡ Syllabus Question Generator</h3>
           <p style={{ margin: '0 0 20px', fontSize: '0.83rem', color: '#64748b' }}>
-            Generates curriculum-aligned JAMB/WAEC/NECO questions using AI or the built-in Nigerian syllabus knowledge bank.
+            Generates curriculum-aligned JAMB/WAEC/NECO questions using the Nigerian syllabus knowledge bank.
             All generated questions are saved as <b>Pending Review</b> — you must approve before they appear on student exams.
           </p>
 
@@ -2090,7 +2090,7 @@ function QuestionBankTab() {
             </div>
 
             <button type="submit" disabled={aiLoading} style={btn('#6366f1', '#fff', { padding: '11px 28px', fontSize: '0.9rem', opacity: aiLoading ? 0.7 : 1 })}>
-              {aiLoading ? '⏳ Generating...' : '🤖 Generate Questions'}
+              {aiLoading ? '⏳ Generating...' : '⚡ Generate Questions'}
             </button>
           </form>
 
@@ -2588,10 +2588,10 @@ export default function AdminPage() {
                   </div>
                   <div style={{ textAlign: "left", lineHeight: 1.2 }}>
                     <div style={{ fontSize: "0.85rem", fontWeight: 800, color: "var(--navy, #101c44)" }}>
-                      Priscilla Lily
+                      Academy Administrator
                     </div>
                     <div style={{ fontSize: "0.7rem", fontWeight: 600, color: "#94a3b8" }}>
-                      Admin
+                      Main Administration
                     </div>
                   </div>
                   <Icon path={ICONS.chevronDown} size={14} color="#94a3b8" />

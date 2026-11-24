@@ -170,7 +170,7 @@ export default function QuestionBankAdmin() {
             </h1>
           </div>
           <p style={{ color: '#64748b', fontSize: '0.88rem', margin: 0 }}>
-            Unified question acquisition, syllabus moderation, AI generation, and bulk imports for JAMB UTME, WAEC, NECO & Academy Mocks.
+            Unified question acquisition, syllabus moderation, curriculum generation, and bulk imports for JAMB UTME, WAEC, NECO & Academy Mocks.
           </p>
         </div>
 
@@ -191,7 +191,7 @@ export default function QuestionBankAdmin() {
             onClick={() => setAiModalOpen(true)}
             style={actionBtnStyle('#dfa921', '#0a1628')}
           >
-            <span>🤖</span> AI Question Generator
+            <span>⚡</span> Question Generator
           </button>
 
           <button
@@ -516,7 +516,7 @@ export default function QuestionBankAdmin() {
                           <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                               <span style={originBadgeStyle(q.origin)}>
-                                {q.origin === 'PAST_QUESTION' ? '📜 Past Question' : q.origin === 'AI_GENERATED' ? '🤖 AI Draft' : '✏️ Practice'}
+                                {q.origin === 'PAST_QUESTION' ? '📜 Past Question' : q.origin === 'AI_GENERATED' ? '📝 Practice Draft' : '✏️ Practice'}
                               </span>
                               {q.year && (
                                 <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 700 }}>
@@ -750,7 +750,7 @@ export default function QuestionBankAdmin() {
           onClose={() => setAiModalOpen(false)}
           onGenerated={() => {
             setAiModalOpen(false);
-            showAlert('success', 'AI questions generated and saved as Pending Review.');
+            showAlert('success', 'Questions generated and saved as Pending Review.');
             fetchQuestions();
             fetchStats();
           }}
@@ -968,7 +968,7 @@ function QuestionEditModal({ question, subjects, onClose, onSaved }) {
               >
                 <option value="ORIGINAL_PRACTICE">Original Practice Question</option>
                 <option value="PAST_QUESTION">Verified Past Question (WAEC/JAMB/NECO)</option>
-                <option value="AI_GENERATED">AI Generated Practice Draft</option>
+                <option value="AI_GENERATED">Curriculum Practice Draft</option>
               </select>
             </div>
 
@@ -1580,7 +1580,7 @@ function AiGeneratorModal({ subjects, onClose, onGenerated }) {
       });
       onGenerated();
     } catch (err) {
-      setErrorMsg(err.response?.data?.error || 'AI question generation failed.');
+      setErrorMsg(err.response?.data?.error || 'Question generation failed.');
     } finally {
       setGenerating(false);
     }
@@ -1592,7 +1592,7 @@ function AiGeneratorModal({ subjects, onClose, onGenerated }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingBottom: '12px', borderBottom: '1px solid #e2e8f0' }}>
           <div>
             <h2 style={{ margin: '0 0 4px', fontSize: '1.35rem', fontWeight: 900, color: 'var(--navy)' }}>
-              🤖 AI Syllabus Question Generator
+              ⚡ Syllabus Question Generator
             </h2>
             <span style={{ fontSize: '0.82rem', color: '#64748b' }}>
               Synthesizes new syllabus-aligned questions as Pending Review drafts
@@ -1662,7 +1662,7 @@ function AiGeneratorModal({ subjects, onClose, onGenerated }) {
           </div>
 
           <div style={{ background: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.8rem', color: '#475569' }}>
-            🛡️ <strong>Editorial Governance Rule:</strong> All AI-generated questions are automatically saved as <em>Pending Review</em> and will not appear in student tests until approved by a human educator.
+            🛡️ <strong>Editorial Governance Rule:</strong> All generated questions are automatically saved as <em>Pending Review</em> and will not appear in student tests until approved by an educator.
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
