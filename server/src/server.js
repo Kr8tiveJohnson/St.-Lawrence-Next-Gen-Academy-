@@ -14,7 +14,7 @@ async function initDatabase() {
     if (err.message && (err.message.includes('does not exist') || err.code === 'P2021')) {
       console.log('⚡ Tables missing in database. Auto-pushing schema...');
       try {
-        execSync('npx prisma db push --skip-generate --accept-data-loss', {
+        execSync('npx prisma db push --accept-data-loss', {
           cwd: path.resolve(__dirname, '..'),
           stdio: 'inherit',
           env: { ...process.env }

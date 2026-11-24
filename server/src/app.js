@@ -119,7 +119,7 @@ app.get('/api/setup-db', async (req, res) => {
     const path = require('path');
     const { execSync } = require('child_process');
     console.log('⚡ Initializing database schema via /api/setup-db...');
-    const output = execSync('npx prisma db push --skip-generate --accept-data-loss', {
+    const output = execSync('npx prisma db push --accept-data-loss', {
       cwd: path.resolve(__dirname, '..'),
       env: { ...process.env },
       encoding: 'utf-8'
