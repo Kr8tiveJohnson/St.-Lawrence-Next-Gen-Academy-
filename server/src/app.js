@@ -113,6 +113,33 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// Setup / Initialize Database endpoint (Creates all tables on demand)
+app.get('/api/setup-db', async (req, res) => {
+  try {
+    const path = require('path');
+    const { execSync } = require('child_process');
+    console.log('⚡ Initializing database schema via /api/setup-db...');
+    const output = execSync('npx prisma db push --skip-generate --accept-data-loss', {
+      cwd: path.resolve(__dirname, '..'),
+      env: { ...process.env },
+      encoding: 'utf-8'
+    });
+    console.log(output);
+    res.json({
+      status: 'ok',
+      message: 'Database schema created and synchronized successfully!',
+      output: output.split('\n').filter(Boolean)
+    });
+  } catch (err) {
+    console.error('Setup DB error:', err);
+    res.status(500).json({
+      status: 'error',
+      message: err.message,
+      stderr: err.stderr ? err.stderr.toString() : undefined
+    });
+  }
+});
+
 // Dedicated DB Diagnostic Endpoint
 app.get('/api/health/db', async (req, res) => {
   try {
